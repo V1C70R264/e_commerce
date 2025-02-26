@@ -1,4 +1,4 @@
-import 'package:e_commerce/screens/product_detail_screen.dart';
+import 'package:e_commerce/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -31,6 +31,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // Automatically navigate to the next page every 3 seconds
+    Future.delayed(const Duration(seconds: 3), _nextPage);
+  }
+
+  void _nextPage() {
+    if (_currentPage < _items.length - 1) {
+      _currentPage++;
+      _pageController.animateToPage(
+        _currentPage,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeIn,
+      );
+      // Schedule the next page transition
+      Future.delayed(const Duration(seconds: 3), _nextPage);
+    }
+  }
+
+  void _navigateToLogin() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -53,48 +80,73 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             Padding(
               padding: const EdgeInsets.all(24),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
-                  // Skip button
-                  TextButton(
-                    onPressed: () => _navigateToHome(),
-                    child: Text(
-                      'Skip',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 16,
+                  // Worm effect indicator
+                  Container(
+                    height: 8,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        _items.length,
+                        (index) => _buildWormIndicator(index),
                       ),
                     ),
                   ),
-                  // Dot indicators
-                  Row(
-                    children: List.generate(
-                      _items.length,
-                      (index) => _buildDotIndicator(index),
-                    ),
-                  ),
-                  // Next button
-                  TextButton(
-                    onPressed: () {
-                      if (_currentPage == _items.length - 1) {
-                        _navigateToHome();
-                      } else {
-                        _pageController.nextPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeIn,
-                        );
-                      }
-                    },
-                    child: Text(
-                      _currentPage == _items.length - 1 ? 'Start' : 'Next',
-                      style: const TextStyle(
-                        color: Colors.green,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                  const SizedBox(height: 32),
+                  // Show different buttons based on current page
+                  if (_currentPage == _items.length - 1)
+                    // Get Started button for last page
+                    ElevatedButton(
+                      onPressed: _navigateToLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        minimumSize: const Size(double.infinity, 56),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        elevation: 0,
                       ),
+                      child: const Text(
+                        'Get Started',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    )
+                  else
+                    // Skip and Next row for other pages
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: _navigateToLogin,
+                          child: Text(
+                            'Skip',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: _nextPage,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.green,
+                            ),
+                            padding: const EdgeInsets.all(12),
+                            child: const Icon(
+                              Icons.arrow_forward,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
                 ],
               ),
             ),
@@ -137,22 +189,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildDotIndicator(int index) {
-    return Container(
+  Widget _buildWormIndicator(int index) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.symmetric(horizontal: 4),
-      width: 8,
+      width: _currentPage == index ? 24 : 8,
       height: 8,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(4),
         color: _currentPage == index ? Colors.green : Colors.grey[300],
       ),
-    );
-  }
-
-  void _navigateToHome() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const ProductDetailScreen()),
     );
   }
 }

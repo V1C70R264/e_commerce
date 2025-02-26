@@ -10,6 +10,8 @@
 // import 'package:e_commerce/screens/auth/login_screen.dart';
 // import 'package:e_commerce/screens/splash_screen.dart';
 import 'package:e_commerce/screens/login_screen.dart';
+import 'package:e_commerce/screens/modern_onboarding_screen.dart';
+import 'package:e_commerce/screens/onboarding_screen.dart';
 import 'package:e_commerce/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -35,7 +37,7 @@ class MyApp extends StatelessWidget {
         ),
         scaffoldBackgroundColor: const Color.fromARGB(255, 50, 58, 60),
       ),
-      home: const SplashScreen(),
+      home: const OnboardingScreen(),
     );
   }
 }
