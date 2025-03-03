@@ -1,7 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:e_commerce/widgets/authentication_field.dart';
 import 'package:e_commerce/screens/signup_screen.dart';
 import 'package:flutter/gestures.dart';
+import 'package:e_commerce/screens/home_screen.dart';
+
+final firebase = FirebaseAuth.instance;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,6 +17,46 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
+  var enteredEmail = '';
+  var enteredPassword = '';
+  bool isSending = false;
+
+  ////////////LOGIN FUNCTIONALITY////////////////
+  void loginUser() async {
+    try {
+      final isValid = _formKey.currentState!.validate();
+      if (!isValid) {
+        return;
+      }
+
+      _formKey.currentState!.save();
+
+      await firebase.signInWithEmailAndPassword(
+        email: enteredEmail.trim(),
+        password: enteredPassword.trim(),
+      );
+
+      // Optional: Navigate to home screen on success
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      }
+    } on FirebaseAuthException catch (error) {
+      // Show specific error messages
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.message ?? 'Authentication failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      
+    }
+  }
+  /////////////////////////END OF LOGIC/////////////////////////////
 
   @override
   Widget build(BuildContext context) {
@@ -82,43 +126,47 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 40),
                       // Username/Email Field
                       AuthenticationField(
-                        label: 'Username or Email',
-                        hint: 'Enter your username or email',
-                        prefixIcon: Icons.person_outline,
-                        validator: (value) {
-                          if (value?.isEmpty ?? true) {
-                            return 'Please enter your username or email';
-                          }
-                          return null;
-                        },
-                      ),
+                          label: 'Username or Email',
+                          hint: 'Enter your username or email',
+                          prefixIcon: Icons.person_outline,
+                          validator: (value) {
+                            if (value?.isEmpty ?? true) {
+                              return 'Please enter your username or email';
+                            }
+                            return null;
+                          },
+                          onSaved: (value) {
+                            enteredEmail = value!;
+                          }),
                       const SizedBox(height: 20),
                       // Password Field
                       AuthenticationField(
-                        label: 'Password',
-                        hint: 'Enter your password',
-                        prefixIcon: Icons.lock_outline,
-                        obscureText: _obscurePassword,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            color: Colors.grey,
+                          label: 'Password',
+                          hint: 'Enter your password',
+                          prefixIcon: Icons.lock_outline,
+                          obscureText: _obscurePassword,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              color: Colors.grey,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
+                          validator: (value) {
+                            if (value?.isEmpty ?? true) {
+                              return 'Please enter your password';
+                            }
+                            return null;
                           },
-                        ),
-                        validator: (value) {
-                          if (value?.isEmpty ?? true) {
-                            return 'Please enter your password';
-                          }
-                          return null;
-                        },
-                      ),
+                          onSaved: (value) {
+                            enteredPassword = value!;
+                          }),
                       const SizedBox(height: 12),
                       // Forgot Password
                       Align(
@@ -142,11 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {
-                            if (_formKey.currentState?.validate() ?? false) {
-                              // Handle login
-                            }
-                          },
+                          onPressed: loginUser,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
                             padding: const EdgeInsets.symmetric(vertical: 16),
