@@ -1,8 +1,7 @@
 import 'package:e_commerce/widgets/authentication_field.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:e_commerce/services/django_auth_service.dart';
 import 'package:flutter/material.dart';
-
-final firebase = FirebaseAuth.instance;
+import 'package:e_commerce/screens/home_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -19,21 +18,82 @@ class _SignUpScreenState extends State<SignUpScreen> {
   var enteredPassword = '';
   var enterdPhoneNumber = '';
   var enteredName = '';
-  ///////////////////CREATING ACCOUNT LOGIC/////////////////////
+  bool isSending = false;
+
+  ///////////////////CREATING ACCOUNT LOGIC WITH DJANGO/////////////////////
   void createAccount() async {
-    final isValid = _formKey.currentState!.validate();
-    if (isValid) {
-      _formKey.currentState!.save();
-      try {
-        final userCredentials = await firebase.createUserWithEmailAndPassword(
-            email: enteredEmail, password: enteredPassword);
-        if (!isValid) {
-          return;
-        }
-      } on FirebaseAuthException catch (error) {
+    try {
+      final isValid = _formKey.currentState!.validate();
+      if (!isValid) {
+        return;
+      }
+
+      if (!_acceptedTerms) {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(error.message ?? 'Account Created Failed')));
+          const SnackBar(
+            content: Text('Please accept the Terms of Service'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      _formKey.currentState!.save();
+
+      setState(() {
+        isSending = true;
+      });
+
+      // Use Django registration
+      final success = await DjangoAuthService.register(
+        username: enteredName.trim(),
+        email: enteredEmail.trim(),
+        password: enteredPassword.trim(),
+      );
+
+      if (success) {
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Account created successfully! Please login.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          // Navigate back to login screen
+          Navigator.pop(context);
+        }
+      } else {
+        // Show error message
+        if (mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Registration failed. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (error) {
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSending = false;
+        });
       }
     }
   }
@@ -199,7 +259,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _acceptedTerms ? createAccount : null,
+                  onPressed: (_acceptedTerms && !isSending) ? createAccount : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
@@ -209,13 +269,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Create Account',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: isSending
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Create Account',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 24),

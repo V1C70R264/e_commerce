@@ -1,5 +1,6 @@
-import 'package:e_commerce/screens/onboarding_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:e_commerce/screens/language_selection_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -40,18 +41,6 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Start the animation
     _controller.forward();
-
-    // Navigate to next screen after animation
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        Future.delayed(const Duration(seconds: 1), () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-          );
-        });
-      }
-    });
   }
 
   @override
@@ -65,21 +54,43 @@ class _SplashScreenState extends State<SplashScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return FadeTransition(
-              opacity: _fadeAnimation,
-              child: Transform.scale(
-                scale: _scaleAnimation.value,
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  width: 400,
-                  height: 400,
-                ),
-              ),
-            );
-          },
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Transform.scale(
+                    scale: _scaleAnimation.value,
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      width: 400,
+                      height: 400,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 50),
+            // Temporary debug button to clear language preference
+            ElevatedButton(
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('selected_language');
+                print("DEBUG: Language preference cleared!");
+                if (mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (context) => const LanguageSelectionScreen(),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Clear Language & Show Selection (Debug)'),
+            ),
+          ],
         ),
       ),
     );

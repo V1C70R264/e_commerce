@@ -1,11 +1,10 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:e_commerce/widgets/authentication_field.dart';
+import 'package:e_commerce/widgets/authentication_field.dart'; 
 import 'package:e_commerce/screens/signup_screen.dart';
+import 'package:e_commerce/services/localization_service.dart';
+import 'package:e_commerce/services/django_auth_service.dart';
 import 'package:flutter/gestures.dart';
 import 'package:e_commerce/screens/home_screen.dart';
-
-final firebase = FirebaseAuth.instance;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,39 +20,60 @@ class _LoginScreenState extends State<LoginScreen> {
   var enteredPassword = '';
   bool isSending = false;
 
-  ////////////LOGIN FUNCTIONALITY////////////////
-  void loginUser() async {
+  ////////////LOGIN FUNCTIONALITY WITH DJANGO////////////////
+  Future<void> loginUser() async {
     try {
       final isValid = _formKey.currentState!.validate();
-      if (!isValid) {
-        return;
-      }
-
+      if (!isValid) return;
+      
       _formKey.currentState!.save();
 
-      await firebase.signInWithEmailAndPassword(
-        email: enteredEmail.trim(),
+      setState(() {
+        isSending = true;
+      });
+
+      // Use Django authentication
+      final success = await DjangoAuthService.login(
+        username: enteredEmail.trim(),
         password: enteredPassword.trim(),
       );
 
-      // Optional: Navigate to home screen on success
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
+      if (success) {
+        // Navigate to home screen on success
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        }
+      } else {
+        // Show error message
+        if (mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Login failed. Please check your credentials.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
-    } on FirebaseAuthException catch (error) {
-      // Show specific error messages
+    } catch (error) {
+      // Show error message
       if (mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error.message ?? 'Authentication failed'),
+            content: Text('Error: $error'),
             backgroundColor: Colors.red,
           ),
         );
       }
-      
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSending = false;
+        });
+      }
     }
   }
   /////////////////////////END OF LOGIC/////////////////////////////
@@ -107,9 +127,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: 150,
                       ),
                       const SizedBox(height: 32),
-                      const Text(
-                        'Welcome Back!',
-                        style: TextStyle(
+                      Text(
+                        localizationService.getString('welcome_back'),
+                        style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.5,
@@ -117,7 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Sign in to continue shopping',
+                        localizationService.getString('sign_in_to_continue'),
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.grey[600],
@@ -126,12 +146,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 40),
                       // Username/Email Field
                       AuthenticationField(
-                          label: 'Username or Email',
-                          hint: 'Enter your username or email',
+                          label: localizationService.getString('username_or_email'),
+                          hint: localizationService.getString('enter_username_or_email'),
                           prefixIcon: Icons.person_outline,
                           validator: (value) {
                             if (value?.isEmpty ?? true) {
-                              return 'Please enter your username or email';
+                              return localizationService.getString('please_enter_username');
                             }
                             return null;
                           },
@@ -141,8 +161,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 20),
                       // Password Field
                       AuthenticationField(
-                          label: 'Password',
-                          hint: 'Enter your password',
+                          label: localizationService.getString('password'),
+                          hint: localizationService.getString('enter_password'),
                           prefixIcon: Icons.lock_outline,
                           obscureText: _obscurePassword,
                           suffixIcon: IconButton(
@@ -160,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           validator: (value) {
                             if (value?.isEmpty ?? true) {
-                              return 'Please enter your password';
+                              return localizationService.getString('please_enter_password');
                             }
                             return null;
                           },
@@ -175,9 +195,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: () {
                             // Handle forgot password
                           },
-                          child: const Text(
-                            'Forgot Password?',
-                            style: TextStyle(
+                          child: Text(
+                            localizationService.getString('forgot_password'),
+                            style: const TextStyle(
                               color: Colors.green,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -190,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: loginUser,
+                          onPressed: isSending ? null : loginUser,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -199,11 +219,57 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             elevation: 0,
                           ),
+                          child: isSending
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : Text(
+                                  localizationService.getString('login'),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Debug Button (remove in production)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            print('Current Django URL: ${DjangoAuthService.getCurrentBaseUrl()}');
+                            final isConnected = await DjangoAuthService.testConnection();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(isConnected 
+                                    ? 'Django connection successful!' 
+                                    : 'Django connection failed. Check URL and server.'),
+                                  backgroundColor: isConnected ? Colors.green : Colors.red,
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(40),
+                            ),
+                            elevation: 0,
+                          ),
                           child: const Text(
-                            'Login',
+                            'Test Django Connection',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 16,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -215,7 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Don\'t have an account? ',
+                            localizationService.getString('dont_have_account'),
                             style: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 14,
@@ -228,9 +294,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 builder: (context) => const SignUpScreen(),
                               ),
                             ),
-                            child: const Text(
-                              'Sign Up',
-                              style: TextStyle(
+                            child: Text(
+                              localizationService.getString('sign_up'),
+                              style: const TextStyle(
                                 color: Colors.green,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -250,11 +316,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             height: 1.5,
                           ),
                           children: [
-                            const TextSpan(
-                              text: 'By continuing, you agree to our ',
+                            TextSpan(
+                              text: localizationService.getString('terms_agreement'),
                             ),
                             TextSpan(
-                              text: 'Terms of Service',
+                              text: localizationService.getString('terms_of_service'),
                               style: TextStyle(
                                 color: Colors.green[700],
                                 fontWeight: FontWeight.w600,
@@ -266,11 +332,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   // You can navigate to terms page or launch URL
                                 },
                             ),
-                            const TextSpan(
-                              text: ' and ',
+                            TextSpan(
+                              text: localizationService.getString('and'),
                             ),
                             TextSpan(
-                              text: 'Privacy Policy',
+                              text: localizationService.getString('privacy_policy'),
                               style: TextStyle(
                                 color: Colors.green[700],
                                 fontWeight: FontWeight.w600,

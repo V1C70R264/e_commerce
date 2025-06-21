@@ -1,4 +1,5 @@
 import 'package:e_commerce/screens/login_screen.dart';
+import 'package:e_commerce/services/localization_service.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' show pi;
 
@@ -14,20 +15,20 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<OnboardingItem> _items = [
+  List<OnboardingItem> get _items => [
     OnboardingItem(
-      title: 'Welcome to FreshCart',
-      description: 'Discover amazing products and shop with ease',
+      title: localizationService.getString('welcome_to_freshcart'),
+      description: localizationService.getString('discover_amazing_products'),
       image: 'assets/images/onboarding2.png',
     ),
     OnboardingItem(
-      title: 'Fast Delivery',
-      description: 'Get your orders delivered to your doorstep quickly',
+      title: localizationService.getString('fast_delivery'),
+      description: localizationService.getString('get_orders_delivered'),
       image: 'assets/images/onboarding1.png',
     ),
     OnboardingItem(
-      title: 'Secure Payments',
-      description: 'Shop safely with our secure payment options',
+      title: localizationService.getString('secure_payments'),
+      description: localizationService.getString('shop_safely'),
       image: 'assets/images/onboarding3.png',
     ),
   ];
@@ -174,9 +175,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           ),
                           elevation: 0,
                         ),
-                        child: const Text(
-                          'Get Started',
-                          style: TextStyle(
+                        child: Text(
+                          localizationService.getString('get_started'),
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
@@ -192,7 +193,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         TextButton(
                           onPressed: _navigateToLogin,
                           child: Text(
-                            'Skip',
+                            localizationService.getString('skip'),
                             style: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 16,
