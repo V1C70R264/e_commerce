@@ -1,11 +1,14 @@
+import 'package:e_commerce/screens/home_screen.dart';
+import 'package:e_commerce/screens/signup_screen.dart';
+import 'package:e_commerce/widgets/authentication_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../domain/entities/user.dart';
 import '../../../domain/usecases/auth/login_user_usecase.dart';
-import '../../widgets/authentication_field.dart';
-import 'signup_screen.dart';
-import '../home/home_screen.dart';
+
+
+
 import 'package:e_commerce/services/django_auth_service.dart';
 
 class LoginScreen extends StatefulWidget {

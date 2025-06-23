@@ -8,7 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:e_commerce/services/django_auth_service.dart';
 import 'package:e_commerce/screens/language_selection_screen.dart';
 
-void main() async {
+void main() {
+  print('APP STARTED!!!');
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
