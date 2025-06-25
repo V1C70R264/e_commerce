@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:e_commerce/models/product.dart';
 
 class ProductDetailScreen extends StatelessWidget {
-  const ProductDetailScreen({Key? key}) : super(key: key);
+  final Product product;
+  const ProductDetailScreen({Key? key, required this.product})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +35,7 @@ class ProductDetailScreen extends StatelessWidget {
             // Product Image
             Center(
               child: Image.network(
-                'https://cdn.mall.adeptmind.ai/https%3A%2F%2Fmultimedia.bbycastatic.ca%2Fmultimedia%2Fproducts%2F500x500%2F183%2F18391%2F18391154.jpg_large.webp', // Add your image
+                product.imageUrl,
                 height: 300,
                 fit: BoxFit.contain,
               ),
@@ -46,9 +49,9 @@ class ProductDetailScreen extends StatelessWidget {
                   // Product Title and Sale Badge
                   Row(
                     children: [
-                      const Text(
-                        'Xbox series X',
-                        style: TextStyle(
+                      Text(
+                        product.title,
+                        style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
@@ -117,9 +120,9 @@ class ProductDetailScreen extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // Product Description
-                  const Text(
-                    'The Microsoft Xbox Series X gaming console is capable of impressing with minimal boot times and mesmerizing visual effects when playing games at up to 120 frames per second',
-                    style: TextStyle(
+                  Text(
+                    product.description,
+                    style: const TextStyle(
                       fontSize: 16,
                       color: Colors.black87,
                     ),
@@ -154,9 +157,9 @@ class ProductDetailScreen extends StatelessWidget {
                               fontSize: 16,
                             ),
                           ),
-                          const Text(
-                            '\$570.00',
-                            style: TextStyle(
+                          Text(
+                            '\$${product.price}',
+                            style: const TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                             ),

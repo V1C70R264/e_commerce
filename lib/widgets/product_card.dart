@@ -1,3 +1,4 @@
+import 'package:e_commerce/screens/product_detail_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 
@@ -5,12 +6,20 @@ class ProductCard extends StatelessWidget {
   final Product product;
   final VoidCallback? onTap;
 
-  const ProductCard({Key? key, required this.product, this.onTap}) : super(key: key);
+  const ProductCard({Key? key, required this.product, this.onTap})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProductDetailScreen(product: product),
+          ),
+        );
+      },
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -91,4 +100,4 @@ class ProductCard extends StatelessWidget {
       ),
     );
   }
-} 
+}

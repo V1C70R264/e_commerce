@@ -1,197 +1,232 @@
 import 'package:flutter/material.dart';
+import '../services/django_auth_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late Future<Map<String, dynamic>> _userFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch user profile as soon as the screen loads
+    _userFuture = DjangoAuthService.fetchUserProfile();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    print('ProfileScreen build called');
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: CustomScrollView(
-        slivers: [
-          // Custom App Bar with Profile Header
-          SliverAppBar(
-            expandedHeight: 200,
-            floating: false,
-            pinned: true,
-            backgroundColor: Colors.white,
-            elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                color: Colors.green,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Stack(
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _userFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData) {
+            return const Center(child: Text('No user data found.'));
+          }
+
+          final user = snapshot.data!;
+          final username = user['username'] ?? '';
+          final email = user['email'] ?? '';
+
+          return CustomScrollView(
+            slivers: [
+              // Custom App Bar with Profile Header
+              SliverAppBar(
+                expandedHeight: 200,
+                floating: false,
+                pinned: true,
+                backgroundColor: Colors.white,
+                elevation: 0,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Container(
+                    color: Colors.green,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 3),
-                            color: Colors.white,
-                          ),
-                          child: const Icon(Icons.person_outline,
-                              size: 50, color: Colors.green),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.green,
-                              shape: BoxShape.circle,
-                            ),
-                            child: GestureDetector(
-                              onTap: () {
-                                // TODO: Implement image picker functionality
-                              },
-                              child: const Icon(
-                                Icons.camera_alt,
+                        Stack(
+                          children: [
+                            Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border:
+                                    Border.all(color: Colors.white, width: 3),
                                 color: Colors.white,
-                                size: 20,
+                              ),
+                              child: const Icon(Icons.person_outline,
+                                  size: 50, color: Colors.green),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.green,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    // TODO: Implement image picker functionality
+                                  },
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
                               ),
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          username,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          email,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 16,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'John Doe',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'john.doe@example.com',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit_outlined, color: Colors.white),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: const Icon(Icons.settings_outlined, color: Colors.white),
-                onPressed: () {},
-              ),
-            ],
-          ),
-
-          // Stats Section
-          SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  _buildStatItem('Orders', '12', 'Completed'),
-                  _buildStatItem('Points', '1,208', 'Earned'),
-                  _buildStatItem('Level', 'Gold', 'Member'),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                    onPressed: () {},
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.settings_outlined,
+                        color: Colors.white),
+                    onPressed: () {},
+                  ),
                 ],
               ),
-            ),
-          ),
 
-          // Menu Items
-          SliverList(
-            delegate: SliverChildListDelegate([
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'Account Settings',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+              // Stats Section
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      _buildStatItem('Orders', '12', 'Completed'),
+                      _buildStatItem('Points', '1,208', 'Earned'),
+                      _buildStatItem('Level', 'Gold', 'Member'),
+                    ],
                   ),
                 ),
               ),
-              _buildMenuItem(
-                icon: Icons.shopping_bag_outlined,
-                title: 'My Orders',
-                subtitle: 'View your order history',
-                badgeCount: 2,
-              ),
-              _buildMenuItem(
-                icon: Icons.favorite_border,
-                title: 'Wishlist',
-                subtitle: 'Your favorite items',
-                badgeCount: 5,
-              ),
-              _buildMenuItem(
-                icon: Icons.location_on_outlined,
-                title: 'Addresses',
-                subtitle: 'Manage delivery addresses',
-              ),
-              _buildMenuItem(
-                icon: Icons.payment_outlined,
-                title: 'Payment Methods',
-                subtitle: 'Manage your payment options',
-              ),
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'Preferences',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              _buildMenuItem(
-                icon: Icons.notifications_outlined,
-                title: 'Notifications',
-                subtitle: 'Customize notifications',
-                showToggle: true,
-              ),
-              _buildMenuItem(
-                icon: Icons.language_outlined,
-                title: 'Language',
-                subtitle: 'English (US)',
-              ),
-              _buildMenuItem(
-                icon: Icons.help_outline,
-                title: 'Help & Support',
-                subtitle: 'Get help with your orders',
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade50,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+
+              // Menu Items
+              SliverList(
+                delegate: SliverChildListDelegate([
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text(
+                      'Account Settings',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
                   ),
-                  child: Text(
-                    'Log Out',
-                    style: TextStyle(
-                      color: Colors.red.shade700,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                  _buildMenuItem(
+                    icon: Icons.shopping_bag_outlined,
+                    title: 'My Orders',
+                    subtitle: 'View your order history',
+                    badgeCount: 2,
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.favorite_border,
+                    title: 'Wishlist',
+                    subtitle: 'Your favorite items',
+                    badgeCount: 5,
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.location_on_outlined,
+                    title: 'Addresses',
+                    subtitle: 'Manage delivery addresses',
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.payment_outlined,
+                    title: 'Payment Methods',
+                    subtitle: 'Manage your payment options',
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text(
+                      'Preferences',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
                   ),
-                ),
+                  _buildMenuItem(
+                    icon: Icons.notifications_outlined,
+                    title: 'Notifications',
+                    subtitle: 'Customize notifications',
+                    showToggle: true,
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.language_outlined,
+                    title: 'Language',
+                    subtitle: 'English (US)',
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.help_outline,
+                    title: 'Help & Support',
+                    subtitle: 'Get help with your orders',
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.shade50,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Log Out',
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ]),
               ),
-              const SizedBox(height: 16),
-            ]),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
