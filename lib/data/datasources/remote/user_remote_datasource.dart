@@ -16,7 +16,7 @@ abstract class UserRemoteDatasource {
 
 class UserRemoteDatasourceImpl implements UserRemoteDatasource {
   // Django server URL - use your computer's IP address for device testing
-  static const String baseUrl = 'http://192.168.137.219:8000/api/';
+  static const String baseUrl = 'http://192.168.43.139:8000/api/';
 
   // Alternative: Use 10.0.2.2 for Android emulator testing
   // static const String baseUrl = 'http://10.0.2.2:8000/api/';
@@ -25,7 +25,7 @@ class UserRemoteDatasourceImpl implements UserRemoteDatasource {
   Future<UserModel> fetchUserProfile() async {
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('access_token');
-    if (token == null) {
+    if (token == null ) {
       throw Exception('No access token found');
     }
     var response = await http.get(

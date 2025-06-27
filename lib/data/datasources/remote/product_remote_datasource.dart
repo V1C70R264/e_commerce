@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 
 class ProductService {
   // Replace with your actual Django API endpoint
-  static const String _baseUrl = 'http://192.168.137.219:8000/api/products/';
+  static const String _baseUrl = 'http://192.168.43.139:8000/api/products/';
 
   Future<List<Product>> fetchProducts() async {
     print('Fetching products from \\_baseUrl: \\$_baseUrl');

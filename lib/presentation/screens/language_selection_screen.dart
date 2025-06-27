@@ -1,3 +1,4 @@
+import 'package:e_commerce/presentation/screens/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 
 class LanguageSelectionScreen extends StatefulWidget {
@@ -43,7 +44,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
     'assets/images/onboarding1.png',
     'assets/images/onboarding2.png',
     'assets/images/onboarding3.png',
-   
+
     // Add more as needed
   ];
 
@@ -143,6 +144,11 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
                                   ),
                                   onPressed: () {
                                     // Set language to English
+                                    Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const OnboardingScreen()));
                                   },
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -181,6 +187,11 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen>
                                   ),
                                   onPressed: () {
                                     // Set language to Kiswahili
+                                    Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const OnboardingScreen()));
                                   },
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
