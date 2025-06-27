@@ -1,6 +1,7 @@
+import 'package:e_commerce/presentation/screens/language_selection_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:e_commerce/screens/language_selection_screen.dart';
+
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);

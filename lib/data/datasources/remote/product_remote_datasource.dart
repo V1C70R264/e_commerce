@@ -1,6 +1,6 @@
 import 'dart:convert';
+import 'package:e_commerce/data/models/product_model.dart';
 import 'package:http/http.dart' as http;
-import '../models/product.dart';
 
 class ProductService {
   // Replace with your actual Django API endpoint

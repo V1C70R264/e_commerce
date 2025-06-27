@@ -1,5 +1,13 @@
+import 'package:e_commerce/presentation/screens/login_screen.dart';
 import 'package:flutter/material.dart';
-import '../services/django_auth_service.dart';
+import '../../../../data/datasources/remote/user_remote_datasource.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:e_commerce/presentation/cubit/profile_cubit.dart';
+import 'package:e_commerce/presentation/cubit/profile_state.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -9,34 +17,23 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late Future<Map<String, dynamic>> _userFuture;
-
   @override
   void initState() {
     super.initState();
-    // Fetch user profile as soon as the screen loads
-    _userFuture = DjangoAuthService.fetchUserProfile();
+    context.read<ProfileCubit>().fetchUserProfile();
   }
 
   @override
   Widget build(BuildContext context) {
-    print('ProfileScreen build called');
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _userFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData) {
-            return const Center(child: Text('No user data found.'));
-          }
-
-          final user = snapshot.data!;
-          final username = user['username'] ?? '';
-          final email = user['email'] ?? '';
+    return BlocBuilder<ProfileCubit, ProfileState>(
+      builder: (context, state) {
+        if (state.loading) {
+          return Center(child: CircularProgressIndicator());
+        } else if (state.user != null) {
+          final user = state.user;
+          final username = user!.username ?? '';
+          final email = user.email ?? '';
+          final phone_number = user.phoneNumber ?? '';
 
           return CustomScrollView(
             slivers: [
@@ -47,6 +44,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 pinned: true,
                 backgroundColor: Colors.white,
                 elevation: 0,
+                title: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundImage: _profileImage != null
+                          ? FileImage(_profileImage!)
+                          : (user.profileImage != null
+                              ? NetworkImage(user.profileImage!)
+                              : AssetImage('assets/images/default_avatar.png')
+                                  as ImageProvider),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      username,
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     color: Colors.green,
@@ -55,36 +73,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         Stack(
                           children: [
-                            Container(
-                              width: 100,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border:
-                                    Border.all(color: Colors.white, width: 3),
-                                color: Colors.white,
-                              ),
-                              child: const Icon(Icons.person_outline,
-                                  size: 50, color: Colors.green),
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundImage: _profileImage != null
+                                  ? FileImage(_profileImage!)
+                                  : (user.profileImage != null
+                                      ? NetworkImage(user.profileImage!)
+                                      : AssetImage(
+                                              'assets/images/default_avatar.png')
+                                          as ImageProvider),
                             ),
                             Positioned(
                               bottom: 0,
                               right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.green,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    // TODO: Implement image picker functionality
-                                  },
-                                  child: const Icon(
-                                    Icons.camera_alt,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
+                              child: GestureDetector(
+                                onTap: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    builder: (_) => SafeArea(
+                                      child: Wrap(
+                                        children: [
+                                          ListTile(
+                                            leading: Icon(Icons.camera_alt),
+                                            title: Text('Take Photo'),
+                                            onTap: () {
+                                              Navigator.pop(context);
+                                              _pickImage(ImageSource.camera);
+                                            },
+                                          ),
+                                          ListTile(
+                                            leading: Icon(Icons.photo_library),
+                                            title: Text('Choose from Gallery'),
+                                            onTap: () {
+                                              Navigator.pop(context);
+                                              _pickImage(ImageSource.gallery);
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: Colors.green,
+                                  child: Icon(Icons.camera_alt,
+                                      color: Colors.white, size: 20),
                                 ),
                               ),
                             ),
@@ -92,15 +126,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          username,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                          email,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 16,
                           ),
                         ),
                         Text(
-                          email,
+                          phone_number,
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.8),
                             fontSize: 16,
@@ -203,18 +236,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () async {
+                        await UserRemoteDatasourceImpl().logout();
+                        if (context.mounted) {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                                builder: (context) => const LoginScreen()),
+                            (route) => false,
+                          );
+                        }
+                      },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.shade50,
+                        backgroundColor: Colors.green,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(40),
                         ),
                       ),
                       child: Text(
                         'Log Out',
                         style: TextStyle(
-                          color: Colors.red.shade700,
+                          color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -226,10 +268,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           );
-        },
-      ),
+        } else if (state.error != null) {
+          return Center(child: Text('Error: ${state.error}'));
+        }
+        return Container(); // or your initial state widget
+      },
     );
   }
+
+  File? _profileImage;
 
   Widget _buildStatItem(String label, String value, String subtitle) {
     return Expanded(
@@ -354,5 +401,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source, imageQuality: 80);
+
+    if (pickedFile != null) {
+      setState(() {
+        _profileImage = File(pickedFile.path);
+      });
+      await _uploadProfileImage();
+    }
+  }
+
+  Future<void> _uploadProfileImage() async {
+    if (_profileImage == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access_token');
+    if (token == null) {
+      // Handle not logged in
+      return;
+    }
+
+    final uri = Uri.parse(
+        'http://<your-server-ip>:8000/api/user/'); // Use your actual backend URL
+    final request = http.MultipartRequest('PATCH', uri)
+      ..headers['Authorization'] = 'Bearer $token'
+      ..files.add(await http.MultipartFile.fromPath(
+          'profile_image', _profileImage!.path));
+
+    final response = await request.send();
+
+    if (response.statusCode == 200) {
+      // Success: Optionally refresh user data
+      context.read<ProfileCubit>().fetchUserProfile();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Profile image updated!'),
+            backgroundColor: Colors.green),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Failed to upload image'),
+            backgroundColor: Colors.red),
+      );
+    }
   }
 }

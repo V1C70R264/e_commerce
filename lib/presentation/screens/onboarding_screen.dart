@@ -1,5 +1,5 @@
-import 'package:e_commerce/screens/login_screen.dart';
-import 'package:e_commerce/services/localization_service.dart';
+import 'package:e_commerce/presentation/screens/login_screen.dart';
+import 'package:e_commerce/data/datasources/remote/localization_service.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' show pi;
 

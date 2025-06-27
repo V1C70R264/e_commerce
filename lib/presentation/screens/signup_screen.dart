@@ -1,7 +1,7 @@
-import 'package:e_commerce/widgets/authentication_field.dart';
-import 'package:e_commerce/services/django_auth_service.dart';
+import 'package:e_commerce/presentation/widgets/authentication_field.dart';
+import 'package:e_commerce/data/datasources/remote/user_remote_datasource.dart';
 import 'package:flutter/material.dart';
-import 'package:e_commerce/screens/home_screen.dart';
+
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -46,7 +46,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       });
 
       // Use Django registration
-      final success = await DjangoAuthService.register(
+      final success = await UserRemoteDatasourceImpl().register(
         username: enteredName.trim(),
         email: enteredEmail.trim(),
         password: enteredPassword.trim(),

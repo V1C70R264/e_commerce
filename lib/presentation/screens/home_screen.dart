@@ -1,10 +1,10 @@
+import 'package:e_commerce/data/datasources/remote/product_remote_datasource.dart';
+import 'package:e_commerce/data/models/product_model.dart';
+import 'package:e_commerce/presentation/widgets/product_card.dart';
 import 'package:flutter/material.dart';
-import '../models/product.dart';
-import '../widgets/product_card.dart';
-import '../services/product_service.dart';
 import 'favorites_screen.dart';
 import 'orders_screen.dart';
-import '../screens/profile_screen.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);

@@ -1,6 +1,7 @@
-import 'package:e_commerce/screens/product_detail_screen.dart';
+import 'package:e_commerce/data/models/product_model.dart';
+import 'package:e_commerce/presentation/screens/product_detail_screen.dart';
 import 'package:flutter/material.dart';
-import '../models/product.dart';
+
 
 class ProductCard extends StatelessWidget {
   final Product product;
