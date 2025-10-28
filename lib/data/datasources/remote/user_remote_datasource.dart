@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:e_commerce/data/models/user_model.dart';
+import 'package:e_commerce/core/constants/app_constants.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,15 +9,20 @@ abstract class UserRemoteDatasource {
   Future<bool> register(
       {required String username,
       required String email,
-      required String password});
+      required String password,
+      required String firstName,
+      required String lastName});
   Future<bool> login({required String username, required String password});
   Future<void> logout();
   // Add other methods as needed
 }
 
 class UserRemoteDatasourceImpl implements UserRemoteDatasource {
-  // Django server URL - use your computer's IP address for device testing
-  static const String baseUrl = 'http://192.168.43.139:8000/api/';
+  // Django server URLs
+  static final String apiBaseUrl = AppConstants.baseUrl.endsWith('/')
+      ? AppConstants.baseUrl
+      : '${AppConstants.baseUrl}/';
+  static final String authBaseUrl = '${apiBaseUrl}auth/';
 
   // Alternative: Use 10.0.2.2 for Android emulator testing
   // static const String baseUrl = 'http://10.0.2.2:8000/api/';
@@ -25,11 +31,11 @@ class UserRemoteDatasourceImpl implements UserRemoteDatasource {
   Future<UserModel> fetchUserProfile() async {
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('access_token');
-    if (token == null ) {
+    if (token == null) {
       throw Exception('No access token found');
     }
     var response = await http.get(
-      Uri.parse('${baseUrl}user/'),
+      Uri.parse('${apiBaseUrl}user/'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -46,11 +52,13 @@ class UserRemoteDatasourceImpl implements UserRemoteDatasource {
     required String username,
     required String email,
     required String password,
+    required String firstName,
+    required String lastName,
   }) async {
     try {
       final response = await http
           .post(
-            Uri.parse('${baseUrl}register/'),
+            Uri.parse('${authBaseUrl}register/'),
             headers: {
               'Content-Type': 'application/json',
             },
@@ -58,6 +66,8 @@ class UserRemoteDatasourceImpl implements UserRemoteDatasource {
               'username': username,
               'email': email,
               'password': password,
+              'first_name': firstName,
+              'last_name': lastName,
             }),
           )
           .timeout(const Duration(seconds: 10));
@@ -75,7 +85,7 @@ class UserRemoteDatasourceImpl implements UserRemoteDatasource {
     try {
       final response = await http
           .post(
-            Uri.parse('${baseUrl}login/'),
+            Uri.parse('${authBaseUrl}login/'),
             headers: {
               'Content-Type': 'application/json',
             },

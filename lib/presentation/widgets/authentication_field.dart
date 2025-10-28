@@ -153,10 +153,11 @@ class AuthenticationField extends StatelessWidget {
           focusNode: focusNode,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: hintStyle ?? TextStyle(
-              color: Colors.grey[400],
-              fontSize: 14,
-            ),
+            hintStyle: hintStyle ??
+                TextStyle(
+                  color: Colors.grey[400],
+                  fontSize: 14,
+                ),
             prefixIcon: Icon(prefixIcon, color: Colors.grey[400], size: 22),
             suffixIcon: suffixIcon,
             filled: true,

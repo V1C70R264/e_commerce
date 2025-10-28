@@ -1,4 +1,5 @@
-import 'package:e_commerce/presentation/screens/language_selection_screen.dart';
+// import 'package:e_commerce/presentation/screens/language_selection_screen.dart';
+import 'package:e_commerce/presentation/screens/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -84,7 +85,7 @@ class _SplashScreenState extends State<SplashScreen>
                 if (mounted) {
                   Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
-                      builder: (context) => const LanguageSelectionScreen(),
+                      builder: (context) => const OnboardingScreen(),
                     ),
                   );
                 }
