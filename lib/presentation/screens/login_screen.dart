@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:e_commerce/presentation/widgets/authentication_field.dart';
 import 'package:e_commerce/data/datasources/remote/localization_service.dart';
 import 'package:e_commerce/data/datasources/remote/user_remote_datasource.dart';
+import 'package:e_commerce/data/repositories/user_repository.dart' as data_repo;
+import 'package:e_commerce/domain/usecases/user/login_user.dart';
 import 'package:flutter/gestures.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -32,9 +34,12 @@ class _LoginScreenState extends State<LoginScreen> {
         isSending = true;
       });
 
-      // Use Django authentication
-      final success = await UserRemoteDatasourceImpl().login(
-        username: enteredEmail.trim(),
+      // Clean architecture: use case -> repository -> datasource
+      final remote = UserRemoteDatasourceImpl();
+      final repo = data_repo.UserRepositoryImpl(remote);
+      final loginUser = LoginUser(repo);
+      final success = await loginUser(
+        email: enteredEmail.trim(),
         password: enteredPassword.trim(),
       );
 

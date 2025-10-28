@@ -12,7 +12,7 @@ abstract class UserRemoteDatasource {
       required String password,
       required String firstName,
       required String lastName});
-  Future<bool> login({required String username, required String password});
+  Future<bool> login({required String email, required String password});
   Future<void> logout();
   // Add other methods as needed
 }
@@ -71,7 +71,13 @@ class UserRemoteDatasourceImpl implements UserRemoteDatasource {
             }),
           )
           .timeout(const Duration(seconds: 10));
-      return response.statusCode == 201;
+      if (response.statusCode == 201) {
+        return true;
+      }
+      // Log server error details to help debugging 400s
+      // ignore: avoid_print
+      print('Register failed [${response.statusCode}]: ${response.body}');
+      return false;
     } catch (e) {
       return false;
     }
@@ -79,7 +85,7 @@ class UserRemoteDatasourceImpl implements UserRemoteDatasource {
 
   @override
   Future<bool> login({
-    required String username,
+    required String email,
     required String password,
   }) async {
     try {
@@ -90,7 +96,7 @@ class UserRemoteDatasourceImpl implements UserRemoteDatasource {
               'Content-Type': 'application/json',
             },
             body: json.encode({
-              'username': username,
+              'email': email,
               'password': password,
             }),
           )
@@ -102,6 +108,8 @@ class UserRemoteDatasourceImpl implements UserRemoteDatasource {
         await prefs.setString('refresh_token', data['refresh']);
         return true;
       } else {
+        // ignore: avoid_print
+        print('Login failed [${response.statusCode}]: ${response.body}');
         return false;
       }
     } catch (e) {

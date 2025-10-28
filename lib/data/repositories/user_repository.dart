@@ -28,4 +28,29 @@ class UserRepositoryImpl implements UserRepository {
     // Implement this based on your API and UserRemoteDatasource
     throw UnimplementedError();
   }
+
+  @override
+  Future<bool> register({
+    required String username,
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+  }) async {
+    return remoteDatasource.register(
+      username: username,
+      email: email,
+      password: password,
+      firstName: firstName,
+      lastName: lastName,
+    );
+  }
+
+  @override
+  Future<bool> login({
+    required String email,
+    required String password,
+  }) async {
+    return remoteDatasource.login(email: email, password: password);
+  }
 }
