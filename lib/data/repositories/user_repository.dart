@@ -15,12 +15,21 @@ class UserRepositoryImpl implements UserRepository {
       id: userModel.id.toString(),
       email: userModel.email,
       username: userModel.username,
-      fullName: null, // Map as needed
+      fullName: _buildFullName(userModel.firstName, userModel.lastName),
       phoneNumber: userModel.phoneNumber,
       profileImage: userModel.profileImage,
-      createdAt: DateTime.now(), // Map as needed
-      updatedAt: DateTime.now(), // Map as needed
+      createdAt: DateTime.now(), // Map as needed or parse from API if provided
+      updatedAt: DateTime.now(), // Map as needed or parse from API if provided
     );
+  }
+
+  String? _buildFullName(String? first, String? last) {
+    final f = (first ?? '').trim();
+    final l = (last ?? '').trim();
+    if (f.isEmpty && l.isEmpty) return null;
+    if (f.isEmpty) return l;
+    if (l.isEmpty) return f;
+    return '$f $l';
   }
 
   @override

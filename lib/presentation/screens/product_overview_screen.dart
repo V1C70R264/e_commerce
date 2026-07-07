@@ -1,4 +1,5 @@
-import 'package:e_commerce/presentation/widgets/product_card.dart';
+import 'package:e_commerce/presentation/data/home_mock_data.dart';
+import 'package:e_commerce/presentation/widgets/home/product_card.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter/material.dart';
 
@@ -30,7 +31,10 @@ class ProductOverviewScreen extends StatelessWidget {
           : ListView.builder(
               itemCount: products.length,
               itemBuilder: (context, index) =>
-                  ProductCard(product: products[index]),
+                  ProductCard(
+                    product: homePopularProducts[
+                        index % homePopularProducts.length],
+                  ),
             ),
     );
   }

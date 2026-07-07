@@ -1,194 +1,168 @@
 import 'package:e_commerce/data/models/product_model.dart';
+import 'package:e_commerce/presentation/data/home_mock_data.dart';
+import 'package:e_commerce/presentation/data/product_detail_mock_data.dart';
+import 'package:e_commerce/presentation/widgets/home/product_card.dart';
+import 'package:e_commerce/presentation/widgets/product_detail/product_detail_image_header.dart';
+import 'package:e_commerce/presentation/widgets/product_detail/product_detail_meta_row.dart';
+import 'package:e_commerce/presentation/widgets/product_detail/product_detail_tab_bar.dart';
 import 'package:flutter/material.dart';
 
-class ProductDetailScreen extends StatelessWidget {
-  final Product product;
-  const ProductDetailScreen({Key? key, required this.product})
-      : super(key: key);
+class ProductDetailScreen extends StatefulWidget {
+  final Product? product;
+
+  const ProductDetailScreen({super.key, this.product});
+
+  @override
+  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
+}
+
+class _ProductDetailScreenState extends State<ProductDetailScreen> {
+  int _selectedTab = 0;
+
+  String get _title =>
+      widget.product?.title.isNotEmpty == true
+          ? widget.product!.title
+          : kDefaultProductTitle;
+
+  String get _imageUrl =>
+      widget.product?.imageUrl.isNotEmpty == true
+          ? widget.product!.imageUrl
+          : kDefaultProductImageUrl;
+
+  String get _description =>
+      widget.product?.description.isNotEmpty == true
+          ? widget.product!.description
+          : kProductDetailDescription;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.favorite_border, color: Colors.black),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.share, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
-      ),
+      backgroundColor: scheme.surfaceContainerHigh,
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product Image
-            Center(
-              child: Image.network(
-                product.imageUrl,
-                height: 300,
-                fit: BoxFit.contain,
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Product Title and Sale Badge
-                  Row(
+            ProductDetailImageHeader(imageUrl: _imageUrl),
+            Transform.translate(
+              offset: const Offset(0, -20),
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHigh,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    ProductDetailLayout.horizontalPadding,
+                    8,
+                    ProductDetailLayout.horizontalPadding,
+                    24,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        product.title,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                        _title,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: scheme.onSurface,
+                          fontWeight: FontWeight.w800,
+                          height: 1.2,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red[100],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: const [
-                            Icon(Icons.local_offer,
-                                size: 14, color: Colors.red),
-                            SizedBox(width: 4),
-                            Text(
-                              'On sale',
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
+                      const SizedBox(height: 12),
+                      ProductDetailMetaRow(
+                        rating: kDefaultRating,
+                        reviewCount: kDefaultReviewCount,
+                        seller: kDefaultSeller,
+                        vendor: kDefaultVendor,
                       ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Rating and Reviews
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 20),
-                      const Text(
-                        ' 4.8',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                      const SizedBox(height: 16),
+                      Divider(color: scheme.outlineVariant, height: 1),
+                      const SizedBox(height: 16),
+                      ProductDetailTabBar(
+                        tabs: kProductDetailTabs,
+                        selectedIndex: _selectedTab,
+                        onTabSelected: (i) => setState(() => _selectedTab = i),
                       ),
-                      const SizedBox(width: 12),
-                      Icon(Icons.thumb_up, color: Colors.grey[600], size: 20),
+                      const SizedBox(height: 16),
                       Text(
-                        ' 94%',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 16,
+                        _tabBody,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                          height: 1.5,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Text(
-                        '117 reviews',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Product Description
-                  Text(
-                    product.description,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.black87,
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Storage Options
-                  Row(
-                    children: [
-                      _buildStorageOption('1 TB', true),
-                      const SizedBox(width: 8),
-                      _buildStorageOption('825 GB', false),
-                      const SizedBox(width: 8),
-                      _buildStorageOption('512 GB', false),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Price and Add to Cart
-                  Row(
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(height: 20),
+                      Divider(color: scheme.outlineVariant, height: 1),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '\$650.00',
-                            style: TextStyle(
-                              decoration: TextDecoration.lineThrough,
-                              color: Colors.grey[500],
-                              fontSize: 16,
+                            'You Might Also Like',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              color: scheme.onSurface,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
-                          Text(
-                            '\$${product.price}',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                          TextButton(
+                            onPressed: () {},
+                            style: TextButton.styleFrom(
+                              foregroundColor: scheme.onSurfaceVariant,
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              'View All',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            'Add to Cart',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        height: HomeLayout.productCardHeight,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: relatedProducts.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: 14),
+                          itemBuilder: (context, index) {
+                            final item = relatedProducts[index];
+                            return ProductCard(
+                              product: item,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ProductDetailScreen(
+                                      product: Product(
+                                        id: item.id,
+                                        title: item.title,
+                                        description: item.description,
+                                        imageUrl: item.imageUrl,
+                                        price: item.price,
+                                        category: ProductCategory.other,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         ),
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
           ],
@@ -197,20 +171,16 @@ class ProductDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStorageOption(String size, bool isSelected) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? Colors.green : Colors.grey[200],
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        size,
-        style: TextStyle(
-          color: isSelected ? Colors.white : Colors.black,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
+  String get _tabBody {
+    switch (_selectedTab) {
+      case 1:
+        return 'Contact our support team for help with orders, delivery, and product questions. '
+            'We are available 24/7 to assist you.';
+      case 2:
+        return 'Rated ${kDefaultRating.toStringAsFixed(1)} based on $kDefaultReviewCount reviews. '
+            'Customers love the freshness and quality of this product.';
+      default:
+        return _description;
+    }
   }
 }

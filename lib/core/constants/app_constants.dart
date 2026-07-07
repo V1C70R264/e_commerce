@@ -4,7 +4,7 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   // API Constants
-  static const String baseUrl = 'http://192.168.202.21:8000/api';
+  static const String baseUrl = 'http://192.168.174.21:8000/api';
   static const int apiTimeout = 30000; // 30 seconds
 
   // Shared Preferences Keys

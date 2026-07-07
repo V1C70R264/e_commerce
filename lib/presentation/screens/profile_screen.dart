@@ -1,6 +1,7 @@
 import 'package:e_commerce/presentation/screens/login_screen.dart';
 import 'package:flutter/material.dart';
-import '../../../../data/datasources/remote/user_remote_datasource.dart';
+import 'package:e_commerce/data/datasources/remote/user_remote_datasource.dart';
+import 'package:e_commerce/core/constants/app_constants.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -32,8 +33,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         } else if (state.user != null) {
           final user = state.user;
           final username = user!.username ?? '';
-          final email = user.email ?? '';
-          final phone_number = user.phoneNumber ?? '';
+          final email = user.email;
+          // Backend does not provide phone number; use placeholder to avoid UI breaks
+          final phone_number = 'Not provided';
 
           return CustomScrollView(
             slivers: [
@@ -44,114 +46,218 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 pinned: true,
                 backgroundColor: Colors.white,
                 elevation: 0,
-                title: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundImage: _profileImage != null
-                          ? FileImage(_profileImage!)
-                          : (user.profileImage != null
-                              ? NetworkImage(user.profileImage!)
-                              : AssetImage('assets/images/default_avatar.png')
-                                  as ImageProvider),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      username,
-                      style: const TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Container(
-                    color: Colors.green,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                title: null,
+                flexibleSpace: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final mediaTop = MediaQuery.of(context).padding.top;
+                    const expanded = 200.0;
+                    final toolbar = kToolbarHeight + mediaTop;
+                    final h = constraints.maxHeight.clamp(toolbar, expanded);
+                    final t = ((h - toolbar) / (expanded - toolbar)).toDouble();
+                    final smallOpacity = (1.0 - t).clamp(0.0, 1.0);
+                    return Stack(
+                      fit: StackFit.expand,
                       children: [
-                        Stack(
-                          children: [
-                            CircleAvatar(
-                              radius: 50,
-                              backgroundImage: _profileImage != null
-                                  ? FileImage(_profileImage!)
-                                  : (user.profileImage != null
-                                      ? NetworkImage(user.profileImage!)
-                                      : AssetImage(
-                                              'assets/images/default_avatar.png')
-                                          as ImageProvider),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: () {
-                                  showModalBottomSheet(
-                                    context: context,
-                                    builder: (_) => SafeArea(
-                                      child: Wrap(
-                                        children: [
-                                          ListTile(
-                                            leading: Icon(Icons.camera_alt),
-                                            title: Text('Take Photo'),
-                                            onTap: () {
-                                              Navigator.pop(context);
-                                              _pickImage(ImageSource.camera);
-                                            },
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Stack(
+                                children: [
+                                  (() {
+                                    final hasNetImage = (user.profileImage !=
+                                            null &&
+                                        user.profileImage!.trim().isNotEmpty);
+                                    return CircleAvatar(
+                                      radius: 50,
+                                      backgroundColor: Colors.white,
+                                      backgroundImage: _profileImage != null
+                                          ? FileImage(_profileImage!)
+                                          : (hasNetImage
+                                              ? NetworkImage(user.profileImage!)
+                                              : null),
+                                      child: (_profileImage == null &&
+                                              !hasNetImage)
+                                          ? Text(
+                                              _initialsFor(
+                                                  username: username,
+                                                  fullName: user.fullName,
+                                                  email: email),
+                                              style: const TextStyle(
+                                                color: Colors.green,
+                                                fontSize: 28,
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                            )
+                                          : null,
+                                    );
+                                  })(),
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        showModalBottomSheet(
+                                          context: context,
+                                          builder: (_) => SafeArea(
+                                            child: Wrap(
+                                              children: [
+                                                ListTile(
+                                                  leading:
+                                                      Icon(Icons.camera_alt),
+                                                  title: Text('Take Photo'),
+                                                  onTap: () {
+                                                    Navigator.pop(context);
+                                                    _pickImage(
+                                                        ImageSource.camera);
+                                                  },
+                                                ),
+                                                ListTile(
+                                                  leading:
+                                                      Icon(Icons.photo_library),
+                                                  title: Text(
+                                                      'Choose from Gallery'),
+                                                  onTap: () {
+                                                    Navigator.pop(context);
+                                                    _pickImage(
+                                                        ImageSource.gallery);
+                                                  },
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                          ListTile(
-                                            leading: Icon(Icons.photo_library),
-                                            title: Text('Choose from Gallery'),
-                                            onTap: () {
-                                              Navigator.pop(context);
-                                              _pickImage(ImageSource.gallery);
-                                            },
-                                          ),
-                                        ],
+                                        );
+                                      },
+                                      child: CircleAvatar(
+                                        radius: 18,
+                                        backgroundColor: Colors.green,
+                                        child: Icon(Icons.camera_alt,
+                                            color: Colors.white, size: 20),
                                       ),
                                     ),
-                                  );
-                                },
-                                child: CircleAvatar(
-                                  radius: 18,
-                                  backgroundColor: Colors.green,
-                                  child: Icon(Icons.camera_alt,
-                                      color: Colors.white, size: 20),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              if (username.isNotEmpty)
+                                Text(
+                                  username,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              Text(
+                                email,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 16,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          email,
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
-                            fontSize: 16,
+                              Text(
+                                phone_number,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Text(
-                          phone_number,
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
-                            fontSize: 16,
+                        // Collapsed (small) avatar + username shown when scrolled
+                        Align(
+                          alignment: Alignment.topLeft,
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                                top: mediaTop + 12, left: 56, right: 16),
+                            child: Opacity(
+                              opacity: smallOpacity,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  (() {
+                                    final hasNetImage = (user.profileImage !=
+                                            null &&
+                                        user.profileImage!.trim().isNotEmpty);
+                                    return CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor:
+                                          Colors.white.withOpacity(0.15),
+                                      backgroundImage: _profileImage != null
+                                          ? FileImage(_profileImage!)
+                                          : (hasNetImage
+                                              ? NetworkImage(user.profileImage!)
+                                              : null),
+                                      child: (_profileImage == null &&
+                                              !hasNetImage)
+                                          ? Text(
+                                              _initialsFor(
+                                                  username: username,
+                                                  fullName: user.fullName,
+                                                  email: email),
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            )
+                                          : null,
+                                    );
+                                  })(),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    username,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ],
-                    ),
-                  ),
+                    );
+                  },
                 ),
                 actions: [
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, color: Colors.white),
-                    onPressed: () {},
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.settings_outlined,
-                        color: Colors.white),
-                    onPressed: () {},
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: Colors.white),
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        // TODO: Navigate to edit profile screen
+                      } else if (value == 'settings') {
+                        // TODO: Navigate to settings screen
+                      } else if (value == 'logout') {
+                        await UserRemoteDatasourceImpl().logout();
+                        if (context.mounted) {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                                builder: (context) => const LoginScreen()),
+                            (route) => false,
+                          );
+                        }
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Text('Edit Profile'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'settings',
+                        child: Text('Settings'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'logout',
+                        child: Text('Log Out'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -277,6 +383,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   File? _profileImage;
+
+  String _initialsFor(
+      {required String username, String? fullName, required String email}) {
+    // Prefer first letter of first name + first letter of last name
+    if (fullName != null && fullName.trim().isNotEmpty) {
+      final parts = fullName
+          .trim()
+          .split(RegExp(r"\s+"))
+          .where((p) => p.isNotEmpty)
+          .toList();
+      if (parts.isNotEmpty) {
+        final first = parts.first;
+        final last = parts.length > 1 ? parts.last : '';
+        final a = first.isNotEmpty ? first[0] : '';
+        final b =
+            last.isNotEmpty ? last[0] : (first.length > 1 ? first[1] : '');
+        final res = (a + b).toUpperCase();
+        if (res.trim().isNotEmpty) return res;
+      }
+    }
+    // Fallbacks
+    final u = username.trim();
+    if (u.isNotEmpty) {
+      return u.substring(0, u.length >= 2 ? 2 : 1).toUpperCase();
+    }
+    final local = email.split('@').first;
+    if (local.isNotEmpty) {
+      final parts =
+          local.split(RegExp(r'[\s._-]+')).where((p) => p.isNotEmpty).toList();
+      if (parts.length >= 2) {
+        return (parts.first[0] + parts.last[0]).toUpperCase();
+      }
+      return local.substring(0, local.length >= 2 ? 2 : 1).toUpperCase();
+    }
+    return '?';
+  }
 
   Widget _buildStatItem(String label, String value, String subtitle) {
     return Expanded(
@@ -425,8 +567,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    final uri = Uri.parse(
-        'http://<your-server-ip>:8000/api/user/'); // Use your actual backend URL
+    final uri = Uri.parse('${AppConstants.baseUrl}users/me/');
     final request = http.MultipartRequest('PATCH', uri)
       ..headers['Authorization'] = 'Bearer $token'
       ..files.add(await http.MultipartFile.fromPath(

@@ -1,184 +1,95 @@
+import 'package:e_commerce/presentation/data/orders_mock_data.dart';
+import 'package:e_commerce/presentation/widgets/orders/order_card.dart';
+import 'package:e_commerce/presentation/widgets/orders/orders_header.dart';
+import 'package:e_commerce/presentation/widgets/orders/orders_tab_bar.dart';
 import 'package:flutter/material.dart';
 
-class OrdersScreen extends StatelessWidget {
-  const OrdersScreen({Key? key}) : super(key: key);
+class OrdersScreen extends StatefulWidget {
+  /// When `true`, hides the back button (e.g. embedded in bottom nav).
+  final bool embedded;
+
+  const OrdersScreen({super.key, this.embedded = false});
+
+  @override
+  State<OrdersScreen> createState() => _OrdersScreenState();
+}
+
+class _OrdersScreenState extends State<OrdersScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  bool get _showBack =>
+      !widget.embedded && Navigator.canPop(context);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Orders',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                _buildTab('Active', true),
-                _buildTab('Completed', false),
-                _buildTab('Cancel', false),
-              ],
+    final scheme = Theme.of(context).colorScheme;
+
+    return ColoredBox(
+      color: scheme.surface,
+      child: SafeArea(
+        child: Column(
+          children: [
+            OrdersHeader(showBackButton: _showBack),
+            OrdersTabBar(controller: _tabController),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _OrderList(orders: inProgressOrders),
+                  _OrderList(orders: completedOrders),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _buildOrderItem(
-                  'Watch',
-                  'Rolex',
-                  '\$40',
-                  'https://example.com/watch.jpg',
-                ),
-                _buildOrderItem(
-                  'Airpods',
-                  'Apple',
-                  '\$333',
-                  'https://example.com/airpods.jpg',
-                ),
-                _buildOrderItem(
-                  'Hoodie',
-                  'Puma',
-                  '\$50',
-                  'https://example.com/hoodie.jpg',
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildTab(String text, bool isSelected) {
-    return Expanded(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text(
-              text,
-              style: TextStyle(
-                color: isSelected ? Colors.green : Colors.grey,
-                fontSize: 16,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ),
-          Container(
-            height: 2,
-            color: isSelected ? Colors.green : Colors.transparent,
-          ),
-        ],
-      ),
-    );
-  }
+class _OrderList extends StatelessWidget {
+  final List<OrderItemData> orders;
 
-  Widget _buildOrderItem(
-      String name, String brand, String price, String imageUrl) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
+  const _OrderList({required this.orders});
+
+  @override
+  Widget build(BuildContext context) {
+    if (orders.isEmpty) {
+      return Center(
+        child: Text(
+          'No orders yet',
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(
+        OrdersLayout.horizontalPadding,
+        16,
+        OrdersLayout.horizontalPadding,
+        24,
       ),
-      child: Row(
-        children: [
-          // Product Image
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              image: DecorationImage(
-                image: NetworkImage(imageUrl),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Product Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  brand,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  price,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.green,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Track Order Button
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 12,
-              ),
-            ),
-            child: const Text(
-              'Track Order',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
+      itemCount: orders.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 14),
+      itemBuilder: (context, index) {
+        return OrderCard(order: orders[index]);
+      },
     );
   }
 }

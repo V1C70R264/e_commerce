@@ -34,17 +34,47 @@ class UserRemoteDatasourceImpl implements UserRemoteDatasource {
     if (token == null) {
       throw Exception('No access token found');
     }
+    final uri = Uri.parse('${apiBaseUrl}users/me/');
+    // Try Bearer first
     var response = await http.get(
-      Uri.parse('${apiBaseUrl}user/'),
+      uri,
       headers: {
         'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
       },
     );
-    if (response.statusCode == 200) {
-      return UserModel.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to load user profile');
+    if (response.statusCode != 200) {
+      // Try legacy 'JWT' prefix
+      response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'JWT $token',
+          'Accept': 'application/json',
+        },
+      );
     }
+    if (response.statusCode == 200) {
+      final body = json.decode(response.body);
+      Map<String, dynamic> userJson;
+      if (body is Map<String, dynamic>) {
+        if (body.containsKey('user') && body['user'] is Map<String, dynamic>) {
+          userJson = body['user'] as Map<String, dynamic>;
+        } else if (body.containsKey('data') &&
+            body['data'] is Map<String, dynamic>) {
+          userJson = body['data'] as Map<String, dynamic>;
+        } else {
+          userJson = body;
+        }
+      } else {
+        // ignore: avoid_print
+        print('Unexpected profile response shape: ${response.body}');
+        throw Exception('Failed to load user profile');
+      }
+      return UserModel.fromJson(userJson);
+    }
+    // ignore: avoid_print
+    print('Profile load failed [${response.statusCode}]: ${response.body}');
+    throw Exception('Failed to load user profile');
   }
 
   @override
