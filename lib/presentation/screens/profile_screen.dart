@@ -1,11 +1,8 @@
+import 'package:e_commerce/main.dart';
 import 'package:e_commerce/presentation/screens/login_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:e_commerce/data/datasources/remote/user_remote_datasource.dart';
-import 'package:e_commerce/core/constants/app_constants.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:e_commerce/presentation/cubit/profile_cubit.dart';
 import 'package:e_commerce/presentation/cubit/profile_state.dart';
@@ -34,8 +31,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final user = state.user;
           final username = user!.username ?? '';
           final email = user.email;
-          // Backend does not provide phone number; use placeholder to avoid UI breaks
-          final phone_number = 'Not provided';
+          final phone_number = user.phoneNumber?.trim().isNotEmpty == true
+              ? user.phoneNumber!
+              : 'Not provided';
 
           return CustomScrollView(
             slivers: [
@@ -234,14 +232,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       } else if (value == 'settings') {
                         // TODO: Navigate to settings screen
                       } else if (value == 'logout') {
-                        await UserRemoteDatasourceImpl().logout();
-                        if (context.mounted) {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(
-                                builder: (context) => const LoginScreen()),
-                            (route) => false,
-                          );
-                        }
+                        await _logout(context);
                       }
                     },
                     itemBuilder: (context) => [
@@ -342,16 +333,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: ElevatedButton(
-                      onPressed: () async {
-                        await UserRemoteDatasourceImpl().logout();
-                        if (context.mounted) {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(
-                                builder: (context) => const LoginScreen()),
-                            (route) => false,
-                          );
-                        }
-                      },
+                      onPressed: () => _logout(context),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -545,6 +527,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _logout(BuildContext context) async {
+    await appAuthRepository.logout();
+    if (context.mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source, imageQuality: 80);
@@ -560,35 +552,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _uploadProfileImage() async {
     if (_profileImage == null) return;
 
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('access_token');
-    if (token == null) {
-      // Handle not logged in
-      return;
-    }
-
-    final uri = Uri.parse('${AppConstants.baseUrl}users/me/');
-    final request = http.MultipartRequest('PATCH', uri)
-      ..headers['Authorization'] = 'Bearer $token'
-      ..files.add(await http.MultipartFile.fromPath(
-          'profile_image', _profileImage!.path));
-
-    final response = await request.send();
-
-    if (response.statusCode == 200) {
-      // Success: Optionally refresh user data
-      context.read<ProfileCubit>().fetchUserProfile();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+    try {
+      await context.read<ProfileCubit>().uploadProfileImage(_profileImage!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
             content: Text('Profile image updated!'),
-            backgroundColor: Colors.green),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
             content: Text('Failed to upload image'),
-            backgroundColor: Colors.red),
-      );
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

@@ -18,8 +18,8 @@ class UserRepositoryImpl implements UserRepository {
       fullName: _buildFullName(userModel.firstName, userModel.lastName),
       phoneNumber: userModel.phoneNumber,
       profileImage: userModel.profileImage,
-      createdAt: DateTime.now(), // Map as needed or parse from API if provided
-      updatedAt: DateTime.now(), // Map as needed or parse from API if provided
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
   }
 
@@ -34,32 +34,16 @@ class UserRepositoryImpl implements UserRepository {
 
   @override
   Future<User> updateProfileImage(File image) async {
-    // Implement this based on your API and UserRemoteDatasource
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<bool> register({
-    required String username,
-    required String email,
-    required String password,
-    required String firstName,
-    required String lastName,
-  }) async {
-    return remoteDatasource.register(
-      username: username,
-      email: email,
-      password: password,
-      firstName: firstName,
-      lastName: lastName,
+    final userModel = await remoteDatasource.updateProfileImage(image);
+    return User(
+      id: userModel.id.toString(),
+      email: userModel.email,
+      username: userModel.username,
+      fullName: _buildFullName(userModel.firstName, userModel.lastName),
+      phoneNumber: userModel.phoneNumber,
+      profileImage: userModel.profileImage,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
-  }
-
-  @override
-  Future<bool> login({
-    required String email,
-    required String password,
-  }) async {
-    return remoteDatasource.login(email: email, password: password);
   }
 }

@@ -1,10 +1,12 @@
+import '../config/api_config.dart';
+
 class AppConstants {
   // App Info
   static const String appName = 'Soko Mkononi';
   static const String appVersion = '1.0.0';
 
-  // API Constants
-  static const String baseUrl = 'http://192.168.174.21:8000/api';
+  // API Constants — override with --dart-define=API_BASE_URL=http://host:8000/api/v1
+  static String get baseUrl => ApiConfig.baseUrl;
   static const int apiTimeout = 30000; // 30 seconds
 
   // Shared Preferences Keys

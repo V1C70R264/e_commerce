@@ -1,3 +1,5 @@
+import 'package:e_commerce/core/config/api_config.dart';
+
 class UserModel {
   final int id;
   final String username;
@@ -22,12 +24,23 @@ class UserModel {
       id: json['id'] is int
           ? json['id'] as int
           : int.tryParse('${json['id']}') ?? 0,
-      username: (json['username'] ?? '') as String,
-      email: (json['email'] ?? '') as String,
-      firstName: (json['first_name'] ?? json['firstName']) as String?,
-      lastName: (json['last_name'] ?? json['lastName']) as String?,
-      phoneNumber: json['phone_number'] as String?,
-      profileImage: json['profile_image'] as String?,
+      username: json['username']  as String,
+      email: json['email'] as String,
+      firstName: json['first_name'] as String?,
+      lastName: json['last_name']  as String?,
+      phoneNumber: json['phone'] as String?,
+      profileImage: _resolveImageUrl(json['avatar_url']),
     );
+  }
+
+  static String? _resolveImageUrl(dynamic value) {
+    if (value == null) return null;
+    final url = value.toString().trim();
+    if (url.isEmpty) return null;
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+
+    final apiBase = ApiConfig.baseUrl.replaceAll(RegExp(r'/+$'), '');
+    final origin = apiBase.replaceAll(RegExp(r'/api/v1$'), '');
+    return url.startsWith('/') ? '$origin$url' : '$origin/$url';
   }
 }

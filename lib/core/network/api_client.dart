@@ -1,22 +1,24 @@
-// lib/core/network/api_client.dart
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';
+import '../constants/api_paths.dart';
+import '../storage/token_storage.dart';
 
 class ApiClient {
   final Dio dio;
-  final _storage = const FlutterSecureStorage();
+  final TokenStorage tokenStorage;
 
-  ApiClient()
-      : dio = Dio(BaseOptions(
+  ApiClient({TokenStorage? storage})
+      : tokenStorage = storage ?? TokenStorage(),
+        dio = Dio(BaseOptions(
           baseUrl: ApiConfig.baseUrl,
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
+          headers: {'Accept': 'application/json'},
         )) {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await _storage.read(key: 'access_token');
+          final token = await tokenStorage.getAccessToken();
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
@@ -27,7 +29,7 @@ class ApiClient {
             final refreshed = await _tryRefreshToken();
             if (refreshed) {
               final opts = error.requestOptions;
-              final token = await _storage.read(key: 'access_token');
+              final token = await tokenStorage.getAccessToken();
               opts.headers['Authorization'] = 'Bearer $token';
               final clonedResponse = await dio.fetch(opts);
               return handler.resolve(clonedResponse);
@@ -40,19 +42,23 @@ class ApiClient {
   }
 
   Future<bool> _tryRefreshToken() async {
-    final refreshToken = await _storage.read(key: 'refresh_token');
+    final refreshToken = await tokenStorage.getRefreshToken();
     if (refreshToken == null) return false;
 
     try {
       final response = await Dio(BaseOptions(baseUrl: ApiConfig.baseUrl)).post(
-        '/auth/token/refresh/',
+        ApiPaths.tokenRefresh,
         data: {'refresh': refreshToken},
       );
-      await _storage.write(key: 'access_token', value: response.data['access']);
+      final access = response.data['access'] as String?;
+      if (access == null) return false;
+      await tokenStorage.saveTokens(
+        access: access,
+        refresh: refreshToken,
+      );
       return true;
     } catch (_) {
-      await _storage.delete(key: 'access_token');
-      await _storage.delete(key: 'refresh_token');
+      await tokenStorage.clearTokens();
       return false;
     }
   }

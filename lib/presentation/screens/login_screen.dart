@@ -1,11 +1,11 @@
+import 'package:e_commerce/main.dart';
 import 'package:e_commerce/presentation/screens/home_screen.dart';
 import 'package:e_commerce/presentation/screens/signup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:e_commerce/presentation/widgets/authentication_field.dart';
 import 'package:e_commerce/data/datasources/remote/localization_service.dart';
-import 'package:e_commerce/data/datasources/remote/user_remote_datasource.dart';
-import 'package:e_commerce/data/repositories/user_repository.dart' as data_repo;
-import 'package:e_commerce/domain/usecases/user/login_user.dart';
+import 'package:e_commerce/domain/usecases/auth/login_user_usecase.dart';
+import 'package:e_commerce/core/utils/result.dart';
 import 'package:flutter/gestures.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -35,28 +35,26 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       // Clean architecture: use case -> repository -> datasource
-      final remote = UserRemoteDatasourceImpl();
-      final repo = data_repo.UserRepositoryImpl(remote);
-      final loginUser = LoginUser(repo);
-      final success = await loginUser(
-        email: enteredEmail.trim(),
-        password: enteredPassword.trim(),
+      final loginUser = LoginUserUseCase(appAuthRepository);
+      final result = await loginUser(
+        enteredEmail.trim(),
+        enteredPassword.trim(),
       );
 
-      if (success) {
+      if (result is Success) {
         // Navigate to home screen on success
         if (mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const HomeScreen()),
           );
         }
-      } else {
+      } else if (result is Error) {
         // Show error message
         if (mounted) {
           ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Login failed. Please check your credentials.'),
+            SnackBar(
+              content: Text((result as Error).message),
               backgroundColor: Colors.red,
             ),
           );

@@ -1,168 +1,88 @@
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:dio/dio.dart';
+import 'package:e_commerce/core/constants/api_paths.dart';
+import 'package:e_commerce/core/network/api_client.dart';
 import 'package:e_commerce/data/models/user_model.dart';
-import 'package:e_commerce/core/constants/app_constants.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 abstract class UserRemoteDatasource {
   Future<UserModel> fetchUserProfile();
-  Future<bool> register(
-      {required String username,
-      required String email,
-      required String password,
-      required String firstName,
-      required String lastName});
-  Future<bool> login({required String email, required String password});
-  Future<void> logout();
-  // Add other methods as needed
+  Future<UserModel> updateProfileImage(File image);
 }
 
 class UserRemoteDatasourceImpl implements UserRemoteDatasource {
-  // Django server URLs
-  static final String apiBaseUrl = AppConstants.baseUrl.endsWith('/')
-      ? AppConstants.baseUrl
-      : '${AppConstants.baseUrl}/';
-  static final String authBaseUrl = '${apiBaseUrl}auth/';
+  final ApiClient apiClient;
 
-  // Alternative: Use 10.0.2.2 for Android emulator testing
-  // static const String baseUrl = 'http://10.0.2.2:8000/api/';
+  UserRemoteDatasourceImpl({ApiClient? apiClient})
+      : apiClient = apiClient ?? ApiClient();
 
   @override
   Future<UserModel> fetchUserProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('access_token');
+    final token = await apiClient.tokenStorage.getAccessToken();
     if (token == null) {
       throw Exception('No access token found');
     }
-    final uri = Uri.parse('${apiBaseUrl}users/me/');
-    // Try Bearer first
-    var response = await http.get(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      },
-    );
-    if (response.statusCode != 200) {
-      // Try legacy 'JWT' prefix
-      response = await http.get(
-        uri,
-        headers: {
-          'Authorization': 'JWT $token',
-          'Accept': 'application/json',
-        },
+
+    try {
+      final response = await apiClient.dio.get(ApiPaths.profile);
+      return _parseUserResponse(response.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw Exception('Session expired. Please log in again.');
+      }
+      throw Exception(_errorMessage(e, 'Failed to load user profile'));
+    }
+  }
+
+  @override
+  Future<UserModel> updateProfileImage(File image) async {
+    final token = await apiClient.tokenStorage.getAccessToken();
+    if (token == null) {
+      throw Exception('No access token found');
+    }
+
+    final uri = Uri.parse('${apiClient.dio.options.baseUrl}${ApiPaths.profile}');
+    final request = http.MultipartRequest('PATCH', uri)
+      ..headers['Authorization'] = 'Bearer $token'
+      ..files.add(
+        await http.MultipartFile.fromPath('profile_image', image.path),
       );
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = jsonDecode(response.body);
+      return _parseUserResponse(body);
     }
-    if (response.statusCode == 200) {
-      final body = json.decode(response.body);
-      Map<String, dynamic> userJson;
-      if (body is Map<String, dynamic>) {
-        if (body.containsKey('user') && body['user'] is Map<String, dynamic>) {
-          userJson = body['user'] as Map<String, dynamic>;
-        } else if (body.containsKey('data') &&
-            body['data'] is Map<String, dynamic>) {
-          userJson = body['data'] as Map<String, dynamic>;
-        } else {
-          userJson = body;
-        }
+
+    throw Exception('Failed to upload profile image');
+  }
+
+  UserModel _parseUserResponse(dynamic body) {
+    Map<String, dynamic> userJson;
+    if (body is Map<String, dynamic>) {
+      if (body.containsKey('user') && body['user'] is Map<String, dynamic>) {
+        userJson = body['user'] as Map<String, dynamic>;
+      } else if (body.containsKey('data') &&
+          body['data'] is Map<String, dynamic>) {
+        userJson = body['data'] as Map<String, dynamic>;
       } else {
-        // ignore: avoid_print
-        print('Unexpected profile response shape: ${response.body}');
-        throw Exception('Failed to load user profile');
+        userJson = body;
       }
-      return UserModel.fromJson(userJson);
+    } else {
+      throw Exception('Failed to load user profile');
     }
-    // ignore: avoid_print
-    print('Profile load failed [${response.statusCode}]: ${response.body}');
-    throw Exception('Failed to load user profile');
+    return UserModel.fromJson(userJson);
   }
 
-  @override
-  Future<bool> register({
-    required String username,
-    required String email,
-    required String password,
-    required String firstName,
-    required String lastName,
-  }) async {
-    try {
-      final response = await http
-          .post(
-            Uri.parse('${authBaseUrl}register/'),
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: json.encode({
-              'username': username,
-              'email': email,
-              'password': password,
-              'first_name': firstName,
-              'last_name': lastName,
-            }),
-          )
-          .timeout(const Duration(seconds: 10));
-      if (response.statusCode == 201) {
-        return true;
-      }
-      // Log server error details to help debugging 400s
-      // ignore: avoid_print
-      print('Register failed [${response.statusCode}]: ${response.body}');
-      return false;
-    } catch (e) {
-      return false;
+  String _errorMessage(DioException e, String fallback) {
+    final data = e.response?.data;
+    if (data is Map<String, dynamic> && data['detail'] != null) {
+      return data['detail'].toString();
     }
+    return fallback;
   }
-
-  @override
-  Future<bool> login({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      final response = await http
-          .post(
-            Uri.parse('${authBaseUrl}login/'),
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: json.encode({
-              'email': email,
-              'password': password,
-            }),
-          )
-          .timeout(const Duration(seconds: 10));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('access_token', data['access']);
-        await prefs.setString('refresh_token', data['refresh']);
-        return true;
-      } else {
-        // ignore: avoid_print
-        print('Login failed [${response.statusCode}]: ${response.body}');
-        return false;
-      }
-    } catch (e) {
-      return false;
-    }
-  }
-
-  @override
-  Future<void> logout() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('access_token');
-      await prefs.remove('refresh_token');
-    } catch (e) {
-      // Optionally handle error
-    }
-  }
-
-  Future<bool> isLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('access_token');
-    return token != null && token.isNotEmpty;
-  }
-
-  // Add other methods as needed
 }
