@@ -1,12 +1,13 @@
-import 'package:e_commerce/main.dart';
-import 'package:e_commerce/presentation/screens/home_screen.dart';
-import 'package:e_commerce/presentation/screens/signup_screen.dart';
-import 'package:flutter/material.dart';
-import 'package:e_commerce/presentation/widgets/authentication_field.dart';
-import 'package:e_commerce/data/datasources/remote/localization_service.dart';
-import 'package:e_commerce/domain/usecases/auth/login_user_usecase.dart';
+import 'package:e_commerce/core/theme/app_theme.dart';
 import 'package:e_commerce/core/utils/result.dart';
-import 'package:flutter/gestures.dart';
+import 'package:e_commerce/domain/usecases/auth/login_user_usecase.dart';
+import 'package:e_commerce/main.dart';
+import 'package:e_commerce/presentation/screens/forgot_password_screen.dart';
+import 'package:e_commerce/presentation/screens/home_screen.dart';
+import 'package:e_commerce/presentation/screens/onboarding_screen.dart';
+import 'package:e_commerce/presentation/screens/signup_screen.dart';
+import 'package:e_commerce/presentation/widgets/auth_custom_widgets.dart';
+import 'package:flutter/material.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,321 +18,249 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
   bool _obscurePassword = true;
-  var enteredEmail = '';
-  var enteredPassword = '';
-  bool isSending = false;
+  bool _rememberMe = false;
+  bool _isLoading = false;
 
-  ////////////LOGIN FUNCTIONALITY WITH DJANGO////////////////
-  Future<void> loginUser() async {
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loginUser() async {
+    if (!_formKey.currentState!.validate()) return;
+    _formKey.currentState!.save();
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      final isValid = _formKey.currentState!.validate();
-      if (!isValid) return;
+      final loginUserUseCase = LoginUserUseCase(appAuthRepository);
+      final result = await loginUserUseCase(email, password);
 
-      _formKey.currentState!.save();
-
-      setState(() {
-        isSending = true;
-      });
-
-      // Clean architecture: use case -> repository -> datasource
-      final loginUser = LoginUserUseCase(appAuthRepository);
-      final result = await loginUser(
-        enteredEmail.trim(),
-        enteredPassword.trim(),
-      );
+      if (!mounted) return;
 
       if (result is Success) {
-        // Navigate to home screen on success
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-          );
-        }
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
       } else if (result is Error) {
-        // Show error message
-        if (mounted) {
-          ScaffoldMessenger.of(context).clearSnackBars();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text((result as Error).message),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text((result as Error).message),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
       }
     } catch (error) {
-      // Show error message
       if (mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $error'),
-            backgroundColor: Colors.red,
+            backgroundColor: Colors.redAccent,
           ),
         );
       }
     } finally {
       if (mounted) {
         setState(() {
-          isSending = false;
+          _isLoading = false;
         });
       }
     }
   }
-  /////////////////////////END OF LOGIC/////////////////////////////
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          // Background gradient circles
-          Positioned(
-            top: -100,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.green.withOpacity(0.1),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -150,
-            left: -150,
-            child: Container(
-              width: 400,
-              height: 400,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.green.withOpacity(0.05),
-              ),
-            ),
-          ),
-          // Main content
-          SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 40),
-                      // App Logo
-                      Image.asset(
-                        'assets/images/logo.png',
-                        height: 150,
-                        width: 150,
-                      ),
-                      const SizedBox(height: 32),
-                      Text(
-                        localizationService.getString('welcome_back'),
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.5,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AuthHeader(
+                  title: 'Log in',
+                  subtitle:
+                      'Enter your email and password to securely access your account and manage your services.',
+                  showBackButton: true,
+                  onBackPressed: () {
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    } else {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const OnboardingScreen(),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        localizationService.getString('sign_in_to_continue'),
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                      // Username/Email Field
-                      AuthenticationField(
-                          label: localizationService
-                              .getString('username_or_email'),
-                          hint: localizationService
-                              .getString('enter_username_or_email'),
-                          prefixIcon: Icons.person_outline,
-                          validator: (value) {
-                            if (value?.isEmpty ?? true) {
-                              return localizationService
-                                  .getString('please_enter_username');
-                            }
-                            return null;
-                          },
-                          onSaved: (value) {
-                            enteredEmail = value!;
-                          }),
-                      const SizedBox(height: 20),
-                      // Password Field
-                      AuthenticationField(
-                          label: localizationService.getString('password'),
-                          hint: localizationService.getString('enter_password'),
-                          prefixIcon: Icons.lock_outline,
-                          obscureText: _obscurePassword,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: Colors.grey,
+                      );
+                    }
+                  },
+                ),
+                const SizedBox(height: 32),
+                // Email field
+                AuthInputField(
+                  controller: _emailController,
+                  hintText: 'Email address',
+                  prefixIcon: Icons.email_outlined,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your email address';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 18),
+                // Password field
+                AuthInputField(
+                  controller: _passwordController,
+                  hintText: 'Password',
+                  prefixIcon: Icons.lock_outline,
+                  obscureText: _obscurePassword,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: const Color(0xFF78828A),
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your password';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
+                // Remember me & Forgot Password row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: Checkbox(
+                            value: _rememberMe,
+                            activeColor: AppTheme.primaryGreen,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
                             ),
-                            onPressed: () {
+                            side: const BorderSide(
+                              color: Color(0xFFD0D5DD),
+                              width: 1.2,
+                            ),
+                            onChanged: (val) {
                               setState(() {
-                                _obscurePassword = !_obscurePassword;
+                                _rememberMe = val ?? false;
                               });
                             },
                           ),
-                          validator: (value) {
-                            if (value?.isEmpty ?? true) {
-                              return localizationService
-                                  .getString('please_enter_password');
-                            }
-                            return null;
-                          },
-                          onSaved: (value) {
-                            enteredPassword = value!;
-                          }),
-                      const SizedBox(height: 12),
-                      // Forgot Password
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {
-                            // Handle forgot password
-                          },
-                          child: Text(
-                            localizationService.getString('forgot_password'),
-                            style: const TextStyle(
-                              color: Colors.green,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
                         ),
-                      ),
-                      const SizedBox(height: 32),
-                      // Login Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: isSending ? null : loginUser,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(40),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: isSending
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
-                                  ),
-                                )
-                              : Text(
-                                  localizationService.getString('login'),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Sign Up Option
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            localizationService.getString('dont_have_account'),
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 14,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => SignUpScreen(),
-                              ),
-                            ),
-                            child: Text(
-                              localizationService.getString('sign_up'),
-                              style: const TextStyle(
-                                color: Colors.green,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      // Terms and Privacy with clickable links
-                      RichText(
-                        textAlign: TextAlign.center,
-                        text: TextSpan(
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Remember me',
                           style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                            height: 1.5,
+                            fontSize: 13,
+                            color: Color(0xFF78828A),
+                            fontWeight: FontWeight.w500,
                           ),
-                          children: [
-                            TextSpan(
-                              text: localizationService
-                                  .getString('terms_agreement'),
-                            ),
-                            TextSpan(
-                              text: localizationService
-                                  .getString('terms_of_service'),
-                              style: TextStyle(
-                                color: Colors.green[700],
-                                fontWeight: FontWeight.w600,
-                                decoration: TextDecoration.none,
-                              ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  // Handle Terms of Service link tap
-                                  // You can navigate to terms page or launch URL
-                                },
-                            ),
-                            TextSpan(
-                              text: localizationService.getString('and'),
-                            ),
-                            TextSpan(
-                              text: localizationService
-                                  .getString('privacy_policy'),
-                              style: TextStyle(
-                                color: Colors.green[700],
-                                fontWeight: FontWeight.w600,
-                                decoration: TextDecoration.none,
-                              ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  // Handle Privacy Policy link tap
-                                  // You can navigate to privacy page or launch URL
-                                },
-                            ),
-                          ],
+                        ),
+                      ],
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const ForgotPasswordScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Forgot Password',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF78828A),
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 28),
+                // Login Button
+                PrimaryPillButton(
+                  text: 'Login',
+                  isLoading: _isLoading,
+                  onPressed: _loginUser,
+                ),
+                const SizedBox(height: 20),
+                // Don't have an account? Sign Up here
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Don't have an account? ",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF78828A),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const SignUpScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Sign Up here',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.primaryGreen,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 36),
+                // Social logins
+                SocialAuthRow(
+                  onGoogleTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Google Sign-in coming soon')),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Layout tokens for the grocery home screen.
 abstract final class HomeLayout {
   static const double horizontalPadding = 20;
@@ -17,12 +19,14 @@ class HomeCategoryData {
   final String id;
   final String label;
   final String? imageUrl;
+  final IconData? icon;
   final bool isAll;
 
   const HomeCategoryData({
     required this.id,
     required this.label,
     this.imageUrl,
+    this.icon,
     this.isAll = false,
   });
 }
@@ -59,35 +63,35 @@ class HomeProductItem {
   });
 }
 
-const String kHomeUserName = 'Tariqul Islam';
+// const String kHomeUserName = user.name;
 const String kHomeUserAvatar =
     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80';
 
 final List<HomeCategoryData> homeCategories = [
-  const HomeCategoryData(id: 'all', label: 'All', isAll: true),
-  const HomeCategoryData(
-    id: 'coffee',
-    label: 'Coffee & tea',
-    imageUrl:
-        'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=200&q=80',
-  ),
   const HomeCategoryData(
     id: 'fruits',
     label: 'Fruits',
-    imageUrl:
-        'https://images.unsplash.com/photo-1464965911861-746a04a4bca6?w=200&q=80',
-  ),
-  const HomeCategoryData(
-    id: 'fastfood',
-    label: 'Fast food',
-    imageUrl:
-        'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200&q=80',
+    icon: Icons.apple_rounded,
   ),
   const HomeCategoryData(
     id: 'vegetables',
     label: 'Vegetables',
-    imageUrl:
-        'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=200&q=80',
+    icon: Icons.eco_rounded,
+  ),
+  const HomeCategoryData(
+    id: 'fish',
+    label: 'Fishs',
+    icon: Icons.set_meal_rounded,
+  ),
+  const HomeCategoryData(
+    id: 'bread',
+    label: 'Bread',
+    icon: Icons.bakery_dining_rounded,
+  ),
+  const HomeCategoryData(
+    id: 'coffee',
+    label: 'Coffee',
+    icon: Icons.local_cafe_rounded,
   ),
 ];
 

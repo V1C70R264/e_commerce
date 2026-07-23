@@ -52,5 +52,26 @@ abstract class AuthRepository {
 
   );
 
-}
 
+
+  Future<Result<void>> verifyOtp({
+
+    required String email,
+
+    required String otp,
+
+  });
+
+
+
+  Future<Result<void>> confirmPasswordReset({
+
+    required String email,
+
+    required String otp,
+
+    required String newPassword,
+
+  });
+
+}

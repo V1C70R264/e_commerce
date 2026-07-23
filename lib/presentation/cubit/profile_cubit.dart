@@ -1,6 +1,4 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:equatable/equatable.dart';
-import '../../domain/entities/user.dart';
 import '../../domain/usecases/user/get_user_profile.dart';
 import '../../domain/usecases/user/update_user_profile_image.dart';
 import 'profile_state.dart';

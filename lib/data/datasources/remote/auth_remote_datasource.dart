@@ -70,6 +70,71 @@ class AuthRemoteDatasource {
     }
   }
 
+  Future<void> requestPasswordReset(String email) async {
+    try {
+      await apiClient.dio.post(
+        ApiPaths.requestPasswordReset,
+        data: {'email': email},
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        // Fallback to requestOtpRequest if main endpoint 404s
+        await apiClient.dio.post(
+          ApiPaths.requestOtpRequest,
+          data: {'email': email},
+        );
+      } else {
+        rethrow;
+      }
+    }
+  }
+
+  Future<void> verifyOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      await apiClient.dio.post(
+        ApiPaths.confirmOtpRequest,
+        data: {
+          'email': email,
+          'otp': otp,
+          'code': otp,
+        },
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        await apiClient.dio.post(
+          ApiPaths.validateResetToken,
+          data: {
+            'email': email,
+            'token': otp,
+            'otp': otp,
+          },
+        );
+      } else {
+        rethrow;
+      }
+    }
+  }
+
+  Future<void> confirmPasswordReset({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    await apiClient.dio.post(
+      ApiPaths.confirmPasswordReset,
+      data: {
+        'email': email,
+        'otp': otp,
+        'token': otp,
+        'password': newPassword,
+        'new_password': newPassword,
+      },
+    );
+  }
+
   Future<UserModel?> parseUserFromAuthResponse(dynamic data) async {
     if (data is! Map<String, dynamic>) return null;
 

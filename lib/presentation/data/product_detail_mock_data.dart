@@ -15,6 +15,7 @@ const int kDefaultReviewCount = 185;
 const String kDefaultSeller = 'Tariqul';
 const String kDefaultVendor = 'Eshop';
 
+
 const String kProductDetailDescription =
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod '
     'tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, '

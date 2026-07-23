@@ -13,63 +13,86 @@ class CategoryItem extends StatelessWidget {
     this.onTap,
   });
 
+  Color _getIconColor(String id) {
+    return switch (id) {
+      'fruits' => const Color(0xFFEF4444),
+      'vegetables' => const Color(0xFF10B981),
+      'fish' => const Color(0xFFF97316),
+      'bread' => const Color(0xFFEAB308),
+      'coffee' => const Color(0xFF8B5CF6),
+      _ => const Color(0xFF26AD71),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final primaryColor = const Color(0xFF26AD71);
+    final iconColor = isSelected ? Colors.white : _getIconColor(category.id);
 
     return GestureDetector(
       onTap: onTap,
-      child: SizedBox(
-        width: 72,
-        child: Column(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? primaryColor : const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(
+            color: isSelected
+                ? primaryColor
+                : const Color(0xFFE2E8F0),
+            width: 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: primaryColor.withValues(alpha: 0.35),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Row(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              width: HomeLayout.categorySize,
-              height: HomeLayout.categorySize,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isSelected
-                    ? scheme.primary
-                    : scheme.surfaceContainerHigh,
-                boxShadow: isSelected
-                    ? null
-                    : [
-                        BoxShadow(
-                          color: scheme.shadow.withValues(alpha: 0.08),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                image: category.isAll || category.imageUrl == null
-                    ? null
-                    : DecorationImage(
-                        image: NetworkImage(category.imageUrl!),
-                        fit: BoxFit.cover,
-                      ),
+            if (category.icon != null) ...[
+              Icon(
+                category.icon,
+                color: iconColor,
+                size: 18,
               ),
-              child: category.isAll
-                  ? Icon(
-                      Icons.menu,
-                      color: isSelected
-                          ? scheme.onPrimary
-                          : scheme.onSurface,
-                      size: 26,
-                    )
-                  : null,
-            ),
-            const SizedBox(height: 8),
+              const SizedBox(width: 8),
+            ] else if (category.imageUrl != null) ...[
+              ClipOval(
+                child: Image.network(
+                  category.imageUrl!,
+                  width: 20,
+                  height: 20,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.category,
+                    color: iconColor,
+                    size: 18,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
             Text(
               category.label,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: isSelected ? scheme.primary : scheme.onSurface,
-                fontWeight:
-                    isSelected ? FontWeight.w600 : FontWeight.w500,
-                height: 1.2,
+              style: TextStyle(
+                color: isSelected ? Colors.white : const Color(0xFF475569),
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                fontSize: 13,
               ),
             ),
           ],

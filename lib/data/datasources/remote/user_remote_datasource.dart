@@ -6,6 +6,7 @@ import 'package:e_commerce/core/constants/api_paths.dart';
 import 'package:e_commerce/core/network/api_client.dart';
 import 'package:e_commerce/data/models/user_model.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 abstract class UserRemoteDatasource {
   Future<UserModel> fetchUserProfile();
@@ -43,20 +44,81 @@ class UserRemoteDatasourceImpl implements UserRemoteDatasource {
       throw Exception('No access token found');
     }
 
-    final uri = Uri.parse('${apiClient.dio.options.baseUrl}${ApiPaths.profile}');
-    final request = http.MultipartRequest('PATCH', uri)
-      ..headers['Authorization'] = 'Bearer $token'
-      ..files.add(
-        await http.MultipartFile.fromPath('profile_image', image.path),
+    final bytes = await image.readAsBytes();
+    final base64Str = base64Encode(bytes);
+    final ext = image.path.split('.').last.toLowerCase();
+    final mimeSubType = (ext == 'png') ? 'png' : 'jpeg';
+    final dataUri = 'data:image/$mimeSubType;base64,$base64Str';
+
+    // 1. Try Base64 Data URI string JSON PATCH (common for OpenAPI string($binary) schemas)
+    try {
+      final response = await apiClient.dio.patch(
+        ApiPaths.profile,
+        data: {
+          'avatar': dataUri,
+          'profile_image': dataUri,
+        },
       );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return _parseUserResponse(response.data);
+      }
+    } catch (_) {}
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+    // 2. Try raw Base64 string JSON PATCH
+    try {
+      final response = await apiClient.dio.patch(
+        ApiPaths.profile,
+        data: {
+          'avatar': base64Str,
+          'profile_image': base64Str,
+        },
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return _parseUserResponse(response.data);
+      }
+    } catch (_) {}
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final body = jsonDecode(response.body);
-      return _parseUserResponse(body);
-    }
+    // 3. Try single multipart file 'avatar'
+    try {
+      final uri = Uri.parse('${apiClient.dio.options.baseUrl}${ApiPaths.profile}');
+      final request = http.MultipartRequest('PATCH', uri)
+        ..headers['Authorization'] = 'Bearer $token'
+        ..files.add(
+          await http.MultipartFile.fromPath(
+            'avatar',
+            image.path,
+            contentType: MediaType('image', mimeSubType),
+          ),
+        );
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final body = jsonDecode(response.body);
+        return _parseUserResponse(body);
+      }
+    } catch (_) {}
+
+    // 4. Try single multipart file 'profile_image'
+    try {
+      final uri = Uri.parse('${apiClient.dio.options.baseUrl}${ApiPaths.profile}');
+      final request = http.MultipartRequest('PATCH', uri)
+        ..headers['Authorization'] = 'Bearer $token'
+        ..files.add(
+          await http.MultipartFile.fromPath(
+            'profile_image',
+            image.path,
+            contentType: MediaType('image', mimeSubType),
+          ),
+        );
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final body = jsonDecode(response.body);
+        return _parseUserResponse(body);
+      }
+    } catch (_) {}
 
     throw Exception('Failed to upload profile image');
   }

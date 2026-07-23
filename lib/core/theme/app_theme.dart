@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 /// Application-wide theme aligned with the Soko Mkononi brand palette.
 abstract final class AppTheme {
-  static const Color seedColor = Color.fromARGB(255, 147, 229, 250);
+  /// Primary green used for buttons, tabs, and accents (matches design screenshots).
+  static const Color primaryGreen = Color(0xFF22A45D);
+  static const Color seedColor = primaryGreen;
   static const Color scaffoldBackground = Color.fromARGB(255, 245, 247, 248);
   static const Color headerBackground = Color.fromARGB(255, 30, 38, 44);
 
@@ -11,6 +13,7 @@ abstract final class AppTheme {
       seedColor: seedColor,
       brightness: Brightness.light,
     ).copyWith(
+      primary: primaryGreen,
       surface: scaffoldBackground,
       onSurface: const Color.fromARGB(255, 30, 38, 44),
       onSurfaceVariant: const Color.fromARGB(255, 120, 130, 138),

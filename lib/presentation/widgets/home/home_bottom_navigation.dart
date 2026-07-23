@@ -1,6 +1,56 @@
-import 'package:e_commerce/presentation/data/home_mock_data.dart';
+import 'package:e_commerce/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
+/// Center-docked floating shopping cart button with light outer ring matching reference screenshot.
+class HomeCartFab extends StatelessWidget {
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const HomeCartFab({
+    super.key,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 62,
+      height: 62,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: const Color(0xFFE8F5EE), // Outer ring glow matching screenshot
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryGreen.withValues(alpha: 0.28),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(3.5),
+      child: Material(
+        color: AppTheme.primaryGreen,
+        shape: const CircleBorder(),
+        elevation: isSelected ? 4 : 2,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: const Center(
+            child: Icon(
+              Icons.shopping_cart_outlined,
+              color: Colors.white,
+              size: 26,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Custom Bottom Navigation Bar matching the exact screenshot design:
+/// Home, Favorite, [FAB Cart], Order, Account
 class HomeBottomNavigation extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -13,70 +63,42 @@ class HomeBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return SizedBox(
-      height: HomeLayout.bottomNavHeight + 28,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.bottomCenter,
+    return BottomAppBar(
+      color: Colors.white,
+      elevation: 12,
+      shadowColor: Colors.black.withValues(alpha: 0.1),
+      surfaceTintColor: Colors.transparent,
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 8,
+      height: 68,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Container(
-            height: HomeLayout.bottomNavHeight,
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHigh,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              boxShadow: [
-                BoxShadow(
-                  color: scheme.shadow.withValues(alpha: 0.08),
-                  blurRadius: 16,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _NavItem(
-                      icon: Icons.home_rounded,
-                      label: 'Home',
-                      isSelected: currentIndex == 0,
-                      onTap: () => onTap(0),
-                    ),
-                    _NavItem(
-                      icon: Icons.favorite_border,
-                      label: 'Favorite',
-                      isSelected: currentIndex == 1,
-                      onTap: () => onTap(1),
-                    ),
-                    const SizedBox(width: HomeLayout.centerFabSize + 8),
-                    _NavItem(
-                      icon: Icons.receipt_long_outlined,
-                      label: 'Order',
-                      isSelected: currentIndex == 3,
-                      onTap: () => onTap(3),
-                    ),
-                    _NavItem(
-                      icon: Icons.person_outline,
-                      label: 'Account',
-                      isSelected: currentIndex == 4,
-                      onTap: () => onTap(4),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          _NavItem(
+            icon: Icons.home_outlined,
+            label: 'Home',
+            isSelected: currentIndex == 0,
+            onTap: () => onTap(0),
           ),
-          Positioned(
-            top: 0,
-            child: _CenterCartFab(
-              isSelected: currentIndex == 2,
-              onTap: () => onTap(2),
-            ),
+          _NavItem(
+            icon: Icons.favorite_border_rounded,
+            label: 'Favorite',
+            isSelected: currentIndex == 1,
+            onTap: () => onTap(1),
+          ),
+          const SizedBox(width: 48), // Space for center FAB
+          _NavItem(
+            icon: Icons.description_outlined,
+            label: 'Order',
+            isSelected: currentIndex == 3,
+            onTap: () => onTap(3),
+          ),
+          _NavItem(
+            icon: Icons.person_outline_rounded,
+            label: 'Account',
+            isSelected: currentIndex == 4,
+            onTap: () => onTap(4),
           ),
         ],
       ),
@@ -99,77 +121,34 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final color =
-        isSelected ? scheme.primary : scheme.onSurfaceVariant;
+    final activeColor = AppTheme.primaryGreen;
+    const inactiveColor = Color(0xFF8C96A6);
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: SizedBox(
-        width: 64,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 24, color: color),
-            const SizedBox(height: 4),
+            Icon(
+              icon,
+              size: 24,
+              color: isSelected ? activeColor : inactiveColor,
+            ),
+            const SizedBox(height: 3),
             Text(
               label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: color,
-                fontWeight:
-                    isSelected ? FontWeight.w600 : FontWeight.w500,
-                fontSize: 11,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? activeColor : inactiveColor,
+                letterSpacing: -0.2,
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CenterCartFab extends StatelessWidget {
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _CenterCartFab({
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: scheme.primary.withValues(alpha: 0.35),
-            blurRadius: 16,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Material(
-        elevation: isSelected ? 8 : 6,
-        color: scheme.primary,
-        shape: const CircleBorder(),
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: SizedBox(
-            width: HomeLayout.centerFabSize,
-            height: HomeLayout.centerFabSize,
-            child: Icon(
-              Icons.shopping_cart_outlined,
-              color: scheme.onPrimary,
-              size: 26,
-            ),
-          ),
         ),
       ),
     );

@@ -1,107 +1,202 @@
 import 'package:e_commerce/presentation/data/home_mock_data.dart';
-import 'package:e_commerce/presentation/widgets/home/home_header_clipper.dart';
+import 'package:e_commerce/presentation/widgets/home/category_item.dart';
 import 'package:e_commerce/presentation/widgets/home/search_bar_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class HomeHeader extends StatelessWidget {
   final String userName;
   final String avatarUrl;
+  final List<HomeCategoryData> categories;
+  final String selectedCategoryId;
+  final ValueChanged<String> onCategorySelected;
   final VoidCallback? onNotificationTap;
+  final VoidCallback? onSearchTap;
+  final VoidCallback? onFilterTap;
 
   const HomeHeader({
     super.key,
-    this.userName = kHomeUserName,
-    this.avatarUrl = kHomeUserAvatar,
+    required this.userName,
+    required this.avatarUrl,
+    required this.categories,
+    required this.selectedCategoryId,
+    required this.onCategorySelected,
     this.onNotificationTap,
+    this.onSearchTap,
+    this.onFilterTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final headerBg = scheme.surfaceContainerHighest;
-    final headerFg = scheme.onInverseSurface;
+    final displayName = userName.trim().isNotEmpty ? userName : 'Guest';
+    final displayAvatar = avatarUrl.isNotEmpty
+        ? avatarUrl
+        : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80';
 
-    return SizedBox(
-      height: HomeLayout.headerHeight + 36,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.topCenter,
+    final topPadding = MediaQuery.paddingOf(context).top;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        top: topPadding + 10,
+        left: HomeLayout.horizontalPadding,
+        right: HomeLayout.horizontalPadding,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          ClipPath(
-            clipper: HomeHeaderClipper(),
-            child: Container(
-              width: double.infinity,
-              height: HomeLayout.headerHeight,
-              color: headerBg,
-              padding: EdgeInsets.only(
-                top: MediaQuery.paddingOf(context).top + 12,
-                left: HomeLayout.horizontalPadding,
-                right: HomeLayout.horizontalPadding,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    radius: 26,
-                    backgroundImage: NetworkImage(avatarUrl),
-                    onBackgroundImageError: (_, __) {},
-                    backgroundColor:
-                        Theme.of(context).colorScheme.surfaceContainerHigh,
+          // Top User Row & Notification Bell
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Avatar
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFF1F5F9),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: Image.network(
+                    displayAvatar,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.person,
+                      color: Color(0xFF64748B),
+                      size: 26,
+                    ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
+                ),
+              ),
+              const SizedBox(width: 14),
+
+              // Greeting & User Name (Retrieved dynamically from backend)
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Hi,',
+                      style: TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF0F172A),
+                        fontSize: 19,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Circular Notification Bell with Indicator Dot
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    onTap: onNotificationTap,
+                    customBorder: const CircleBorder(),
+                    child: Stack(
+                      alignment: Alignment.center,
                       children: [
-                        Text(
-                          'Welcome',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: headerFg.withValues(alpha: 0.85),
-                                  ),
+                        const FaIcon(
+                          FontAwesomeIcons.solidBell,
+                          color: Color(0xFF0F172A),
+                          size: 19,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          userName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(
-                                color: headerFg,
-                                fontWeight: FontWeight.w700,
-                              ),
+                        // Badge Indicator Dot
+                        Positioned(
+                          top: 10,
+                          right: 11,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xFF26AD71),
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  Material(
-                    color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      onTap: onNotificationTap,
-                      customBorder: const CircleBorder(),
-                      child: const SizedBox(
-                        width: 44,
-                        height: 44,
-                        child: Icon(
-                          Icons.notifications_none_outlined,
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Search & Filter Row
+          SearchBarWidget(
+            onTap: onSearchTap,
+            onFilterTap: onFilterTap,
+          ),
+          const SizedBox(height: 24),
+
+          // Categories Title Heading
+          const Text(
+            'Categories',
+            style: TextStyle(
+              color: Color(0xFF0F172A),
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
             ),
           ),
-          Positioned(
-            left: HomeLayout.horizontalPadding,
-            right: HomeLayout.horizontalPadding,
-            bottom: 0,
-            child: const SearchBarWidget(),
+          const SizedBox(height: 14),
+
+          // Horizontal Category Chips List
+          SizedBox(
+            height: 46,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              itemCount: categories.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final category = categories[index];
+                return CategoryItem(
+                  category: category,
+                  isSelected: selectedCategoryId == category.id,
+                  onTap: () => onCategorySelected(category.id),
+                );
+              },
+            ),
           ),
         ],
       ),

@@ -87,7 +87,49 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Result<void>> forgotPassword(String email) async {
-    return const Error('Forgot password is not implemented yet');
+    try {
+      await authRemote.requestPasswordReset(email);
+      return const Success(null);
+    } on DioException catch (e) {
+      return Error(_messageFromDio(e, fallback: 'Failed to request password reset'));
+    } catch (e) {
+      return Error(e.toString());
+    }
+  }
+
+  @override
+  Future<Result<void>> verifyOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      await authRemote.verifyOtp(email: email, otp: otp);
+      return const Success(null);
+    } on DioException catch (e) {
+      return Error(_messageFromDio(e, fallback: 'Invalid OTP code'));
+    } catch (e) {
+      return Error(e.toString());
+    }
+  }
+
+  @override
+  Future<Result<void>> confirmPasswordReset({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    try {
+      await authRemote.confirmPasswordReset(
+        email: email,
+        otp: otp,
+        newPassword: newPassword,
+      );
+      return const Success(null);
+    } on DioException catch (e) {
+      return Error(_messageFromDio(e, fallback: 'Failed to reset password'));
+    } catch (e) {
+      return Error(e.toString());
+    }
   }
 
   Future<User> _resolveCurrentUser() async {

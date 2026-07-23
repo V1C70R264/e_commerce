@@ -1,4 +1,5 @@
 import 'package:e_commerce/presentation/data/orders_mock_data.dart';
+import 'package:e_commerce/presentation/screens/order_tracking_screen.dart';
 import 'package:e_commerce/presentation/widgets/orders/order_card.dart';
 import 'package:e_commerce/presentation/widgets/orders/orders_header.dart';
 import 'package:e_commerce/presentation/widgets/orders/orders_tab_bar.dart';
@@ -88,7 +89,17 @@ class _OrderList extends StatelessWidget {
       itemCount: orders.length,
       separatorBuilder: (_, __) => const SizedBox(height: 14),
       itemBuilder: (context, index) {
-        return OrderCard(order: orders[index]);
+        return OrderCard(
+          order: orders[index],
+          onTrack: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => OrderTrackingScreen(order: orders[index]),
+              ),
+            );
+          },
+        );
       },
     );
   }
